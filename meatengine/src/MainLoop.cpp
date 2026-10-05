@@ -66,6 +66,9 @@ namespace me {
         ScriptingServer::lua().set_function("get_global_registry",
             [this]() -> entt::registry& { return m_registry; }
         );
+        ScriptingServer::lua().set_function("get_fps",
+            [this]() -> float { return m_fps; }
+        );
         Generic::updating::install(m_registry);
         ui::updating::install(m_registry);
 
@@ -139,6 +142,14 @@ namespace me {
 
             float dt = m_clock.restart().asSeconds();
             float scaled_dt = dt * dt_scale;
+
+            m_fps_accum  += dt;
+            m_fps_frames += 1;
+            if (m_fps_accum >= m_fps_update_interval) {
+                m_fps = static_cast<float>(m_fps_frames) / m_fps_accum;
+                m_fps_accum  = 0.f;
+                m_fps_frames = 0;
+            }
 
             if (m_current_state) {
                 m_current_state->update(m_window, m_registry, scaled_dt);

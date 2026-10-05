@@ -7,59 +7,33 @@
 #include <string>
 #include <vector>
 
-namespace {
-	template <typename T>
-	void bind_resource(sol::table& table, const std::string& name) {
-		table.set_function("load_" + name,
-			[](const std::string& path) -> T& {
-				auto res = me::ResourceLoader::load<T>(path);
-				auto h = res.handle();
-				if (!h) throw std::runtime_error("[ResourceLoader] load_" + std::string() + " failed: " + path);
-				return *h;
-			});
-
-		table.set_function("get_" + name,
-			[](const std::string& path) -> T* {
-				auto res = me::ResourceLoader::get<T>(path);
-				auto h = res.handle();
-				return h ? h.get() : nullptr;
-			});
-	}
-}
-
 namespace me::lua_bindings {
 
 void init_resources(sol::state& lua) {
-	sol::table rl = lua.create_table();
-	lua["ResourceLoader"] = rl;
+    sol::table rl = lua.create_table();
+    lua["ResourceLoader"] = rl;
 
-	bind_resource<me::Font>        (rl, "font");
-	bind_resource<me::Texture>     (rl, "texture");
-	bind_resource<me::SoundBuffer> (rl, "sound_buffer");
-	bind_resource<me::SpriteSheet> (rl, "spritesheet");
-	bind_resource<me::TileSet>     (rl, "tileset");
-	bind_resource<me::StyleBox>    (rl, "stylebox");
+    bind_resource<me::Font>        (rl, "Font");
+    bind_resource<me::Texture>     (rl, "Texture");
+    bind_resource<me::SoundBuffer> (rl, "SoundBuffer");
+    bind_resource<me::SpriteSheet> (rl, "SpriteSheet");
+    bind_resource<me::TileSet>     (rl, "TileSet");
+    bind_resource<me::StyleBox>    (rl, "StyleBox");
 
-	rl.set_function("load_shader",
-		[](const std::string& vs, const std::string& fs) -> me::Shader& {
-			auto res = me::ResourceLoader::load<me::Shader>(vs, fs);
-			auto h = res.handle();
-			if (!h) throw std::runtime_error("load_shader failed: " + vs + " / " + fs);
-			return *h;
-		});
+    rl.set_function("load_shader",
+        [](const std::string& vs, const std::string& fs) -> me::Shader& {
+            auto res = me::ResourceLoader::load<me::Shader>(vs, fs);
+            auto h = res.handle();
+            if (!h) throw std::runtime_error("load_shader failed: " + vs + " / " + fs);
+            return *h;
+        });
 
-	rl.set_function("get_shader",
-		[](const std::string& vs, const std::string& fs) -> me::Shader* {
-			auto res = me::ResourceLoader::get<me::Shader>(vs, fs);
-			auto h = res.handle();
-			return h ? h.get() : nullptr;
-		});
-
-    lua.new_usertype<sf::Vector2u>("Vector2u",
-        sol::constructors<sf::Vector2u(), sf::Vector2u(unsigned, unsigned)>(),
-        "x", &sf::Vector2u::x,
-        "y", &sf::Vector2u::y
-    );
+    rl.set_function("get_shader",
+        [](const std::string& vs, const std::string& fs) -> me::Shader* {
+            auto res = me::ResourceLoader::get<me::Shader>(vs, fs);
+            auto h = res.handle();
+            return h ? h.get() : nullptr;
+        });
 
     lua.new_usertype<me::Font>("Font", sol::no_constructor);
 

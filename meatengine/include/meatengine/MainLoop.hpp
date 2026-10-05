@@ -47,5 +47,10 @@ namespace me {
         
         std::unique_ptr<GameState> m_current_state = nullptr;
         std::unique_ptr<GameState> m_next_state = nullptr;
+
+        float m_fps = 0.f;
+        float m_fps_accum = 0.f;
+        int m_fps_frames = 0;
+        static constexpr float m_fps_update_interval = 0.25f;
     };
 } // namespace me

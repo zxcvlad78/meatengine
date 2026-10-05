@@ -3,82 +3,96 @@
 #include "meatengine/meatengine.hpp"
 
 #include <entt/entt.hpp>
+#include <stdexcept>
 #include <string>
 
 namespace me::lua_bindings {
+
 void init(sol::state& lua) {
+    init_sfml(lua);
     init_resources(lua);
     init_common(lua);
 }
 
 void init_common(sol::state& lua) {
-    lua.new_usertype<sf::Vector2f>("Vector2",
-        sol::constructors<sf::Vector2f(), sf::Vector2f(float, float)>(),
-        "x", &sf::Vector2f::x,
-        "y", &sf::Vector2f::y
-    );
+    auto sprite_ut = lua.new_usertype<me::Sprite>("Sprite",
+        sol::constructors<me::Sprite()>(),
 
-    lua.new_usertype<sf::Color>("Color",
-        sol::constructors<
-            sf::Color(),
-            sf::Color(std::uint8_t, std::uint8_t, std::uint8_t),
-            sf::Color(std::uint8_t, std::uint8_t, std::uint8_t, std::uint8_t)
-        >(),
-        "r", &sf::Color::r,
-        "g", &sf::Color::g,
-        "b", &sf::Color::b,
-        "a", &sf::Color::a
-    );
+        "texture", sol::property(
+            [](me::Sprite& sp) -> me::Texture* { return sp.texture_ptr(); },
+            [](me::Sprite& sp, me::Texture& t) { sp.set_texture(t); }
+        ),
 
-    lua.new_usertype<sf::RectangleShape>("RectangleShape",
-        sol::constructors<sf::RectangleShape(), sf::RectangleShape(sf::Vector2f)>(),
-        "position", sol::property(
-            [](sf::RectangleShape& s) { return s.getPosition(); },
-            [](sf::RectangleShape& s, sf::Vector2f p) { s.setPosition(p); }
-        ),
-        "size", sol::property(
-            [](sf::RectangleShape& s) { return s.getSize(); },
-            [](sf::RectangleShape& s, sf::Vector2f sz) { s.setSize(sz); }
-        ),
-        "fill_color", sol::property(
-            [](sf::RectangleShape& s) { return s.getFillColor(); },
-            [](sf::RectangleShape& s, sf::Color c) { s.setFillColor(c); }
-        ),
-        "outline_color", sol::property(
-            [](sf::RectangleShape& s) { return s.getOutlineColor(); },
-            [](sf::RectangleShape& s, sf::Color c) { s.setOutlineColor(c); }
-        ),
-        "outline_thickness", sol::property(
-            [](sf::RectangleShape& s) { return s.getOutlineThickness(); },
-            [](sf::RectangleShape& s, float t) { s.setOutlineThickness(t); }
+        "offset", &me::Sprite::offset,
+        "center", &me::Sprite::center,
+
+        "has_texture", &me::Sprite::has_texture,
+        "has_sprite",  &me::Sprite::has_sprite,
+        "clear_texture", &me::Sprite::clear_texture,
+
+        "sf_sprite", sol::property(
+            [](me::Sprite& sp) -> sf::Sprite* { return sp.sprite_ptr(); },
+            [](me::Sprite&, sol::object) {
+                throw std::runtime_error("sf_sprite is read-only");
+            }
         )
     );
 
-    auto camera_ut = lua.new_usertype<Camera>("Camera",
-        sol::constructors<Camera()>(),
-        "zoom", &Camera::zoom,
-        "smooth", &Camera::smooth
+    auto sprite_animation_ut = lua.new_usertype<me::SpriteAnimation>("SpriteAnimation",
+        sol::constructors<me::SpriteAnimation()>(),
+
+        "spritesheet", sol::property(
+            [](me::SpriteAnimation& sa) -> me::SpriteSheet* {
+                return sa.spritesheet ? sa.spritesheet.operator->() : nullptr;
+            },
+            [](me::SpriteAnimation& sa, me::SpriteSheet& sheet) {
+                auto h = me::ResourceLoader::find_handle(&sheet);
+                if (!h) {
+                    throw std::runtime_error(
+                        "SpriteAnimation.spritesheet: SpriteSheet not from ResourceLoader "
+                        "(load it via ResourceLoader.load_spritesheet first)");
+                }
+                sa.spritesheet = entt::resource<me::SpriteSheet>{h};
+            }
+        ),
+
+        "is_playing",         &me::SpriteAnimation::is_playing,
+        "current_frame_idx",  &me::SpriteAnimation::current_frame_idx,
+        "time_accumulator",   &me::SpriteAnimation::time_accumulator,
+        "next_anim",          &me::SpriteAnimation::next_anim,
+
+        "play", [](me::SpriteAnimation& sa,
+                const std::string& name,
+                sol::optional<std::string> next) {
+            return sa.play(name, next.value_or(""));
+        }
     );
 
-	camera_ut.set_function("is_current", &Camera::is_current);
-    camera_ut.set_function("set_current", &Camera::set_current);
-    camera_ut.set_function("make_current", &Camera::make_current);
-    camera_ut.set_function("get_current", &Camera::get_current);
+    auto camera_ut = lua.new_usertype<me::Camera>("Camera",
+        sol::constructors<me::Camera()>(),
+        "zoom",   &me::Camera::zoom,
+        "smooth", &me::Camera::smooth
+    );
 
-    auto tilemap_ut = lua.new_usertype<TileMap>("TileMap",
-        sol::constructors<TileMap()>(),
-        "origin_x", &TileMap::origin_x,
-        "origin_y", &TileMap::origin_y,
-        "width", &TileMap::width,
-        "height", &TileMap::height,
-        "dirty", &TileMap::dirty,
-        "tiles", &TileMap::tiles,
+    camera_ut.set_function("is_current",   &me::Camera::is_current);
+    camera_ut.set_function("set_current",  &me::Camera::set_current);
+    camera_ut.set_function("make_current", &me::Camera::make_current);
+    camera_ut.set_function("get_current",  &me::Camera::get_current);
+
+    auto tilemap_ut = lua.new_usertype<me::TileMap>("TileMap",
+        sol::constructors<me::TileMap()>(),
+        "origin_x", &me::TileMap::origin_x,
+        "origin_y", &me::TileMap::origin_y,
+        "width",    &me::TileMap::width,
+        "height",   &me::TileMap::height,
+        "dirty",    &me::TileMap::dirty,
+        "tiles",    &me::TileMap::tiles,
         "tileset", sol::property(
-            [](TileMap& tm) -> me::TileSet* {
+            [](me::TileMap& tm) -> me::TileSet* {
                 auto h = tm.tileset.handle();
                 return h ? h.get() : nullptr;
             },
-            [](TileMap& tm, me::TileSet& ts) {
+            [](me::TileMap& tm, me::TileSet& ts) {
                 auto sp = me::ResourceLoader::find_handle(&ts);
                 if (!sp) {
                     throw std::runtime_error(
@@ -91,29 +105,28 @@ void init_common(sol::state& lua) {
         )
     );
 
-	tilemap_ut.set_function("load_tiles", &TileMap::load_tiles);
-    tilemap_ut.set_function("set_tile", &TileMap::set_tile);
-    tilemap_ut.set_function("get_tile", &TileMap::get_tile);
+    tilemap_ut.set_function("load_tiles", &me::TileMap::load_tiles);
+    tilemap_ut.set_function("set_tile",   &me::TileMap::set_tile);
+    tilemap_ut.set_function("get_tile",   &me::TileMap::get_tile);
 
-    lua.new_usertype<Transform>("Transform",
-        sol::constructors<Transform()>(),
-        "position", &Transform::position,
-        "rotation", &Transform::rotation,
-		"scale", &Transform::scale
+    lua.new_usertype<me::Transform>("Transform",
+        sol::constructors<me::Transform()>(),
+        "position", &me::Transform::position,
+        "rotation", &me::Transform::rotation,
+        "scale",    &me::Transform::scale
     );
 
-    lua.new_usertype<Velocity>("Velocity",
-        sol::constructors<Velocity()>(),
-        "linear", &Velocity::linear,
-        "angular", &Velocity::angular
+    lua.new_usertype<me::Velocity>("Velocity",
+        sol::constructors<me::Velocity()>(),
+        "linear",  &me::Velocity::linear,
+        "angular", &me::Velocity::angular
     );
-
 
     lua.new_usertype<me::ui::FillRect>("FillRect",
         sol::constructors<me::ui::FillRect()>(),
         "foreground", &me::ui::FillRect::foreground,
-        "dirty", &me::ui::FillRect::dirty,
-        "shape", &me::ui::FillRect::shape,
+        "dirty",      &me::ui::FillRect::dirty,
+        "shape",      &me::ui::FillRect::shape,
 
         "stylebox", sol::property(
             [](me::ui::FillRect& fr) -> me::StyleBox* {
@@ -162,6 +175,11 @@ void init_common(sol::state& lua) {
         "dirty", &me::ui::Label::dirty
     );
 
+    lua.new_usertype<me::ZIndex>("ZIndex",
+        sol::constructors<me::ZIndex()>(),
+        "value", &me::ZIndex::value
+    );
+
     auto reg_type = lua.new_usertype<entt::registry>("Registry",
         sol::constructors<entt::registry()>()
     );
@@ -169,16 +187,16 @@ void init_common(sol::state& lua) {
     reg_type.set("create", [](entt::registry& r) { return r.create(); });
     reg_type.set("destroy", [](entt::registry& r, entt::entity e) { r.destroy(e); });
 
-    register_component<Transform>(reg_type, "Transform");
-    register_component<Velocity>(reg_type, "Velocity");
-    register_component<TileMap>(reg_type, "TileMap");
-    register_component<Camera>(reg_type, "Camera");
-    register_component<me::ui::FillRect>(reg_type, "FillRect");
-	register_component<me::ui::Label>(reg_type, "Label");
+    register_component<me::Transform>       (reg_type, "Transform");
+    register_component<me::ZIndex>          (reg_type, "ZIndex");
+    register_component<me::Velocity>        (reg_type, "Velocity");
+    register_component<me::TileMap>         (reg_type, "TileMap");
+    register_component<me::Camera>          (reg_type, "Camera");
+    register_component<me::Sprite>          (reg_type, "Sprite");
+    register_component<me::SpriteAnimation> (reg_type, "SpriteAnimation");
+    register_component<me::ui::FillRect>    (reg_type, "FillRect");
+    register_component<me::ui::Label>       (reg_type, "Label");
     register_component<me::ui::Interactable>(reg_type, "Interactable");
-
-
 }
-
 
 } // namespace me::lua_bindings
