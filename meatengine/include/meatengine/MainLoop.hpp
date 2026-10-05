@@ -34,6 +34,7 @@ namespace me {
         void process_events();
         void update_engine(float dt);
         void render_engine();
+        void render_engine_default_view();
 
         std::string m_window_title;
         sf::RenderWindow m_window;

@@ -56,6 +56,10 @@ namespace me {
         RenderSystems::render(m_registry, m_window);
     }
 
+    void MainLoop::render_engine_default_view() {
+        RenderSystems::render_default_view(m_registry, m_window);
+    }
+
     MainLoop::MainLoop(const std::string& title, sf::VideoMode default_mode) 
         : m_prev_mode(default_mode), m_window_title(title) 
     {
@@ -166,6 +170,10 @@ namespace me {
             m_current_state->render_deferred(m_window, m_registry, scaled_dt);
 
             m_window.setView(m_window.getDefaultView());
+
+            render_engine_default_view();
+            m_current_state->render_default_view(m_window, m_registry, scaled_dt);
+
             me::Console::get_instance().render(m_window);
 
 

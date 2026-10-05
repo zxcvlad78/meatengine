@@ -44,6 +44,10 @@ public:
         // update after "render_engine" call
     }
 
+    void render_default_view(sf::RenderWindow& window, entt::registry& registry, float dt) {
+        // render after "render_engine_default_view" call
+    }
+
     void on_exit(sf::RenderWindow& window, entt::registry& registry) override {
 
 	}

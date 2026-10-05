@@ -7,9 +7,9 @@ transform.position.x = 350
 transform.position.y = 250
 
 local fillrect = world:add_FillRect(e)
-fillrect.shape.size = Vector2.new(78, 78)
+fillrect.shape.size = Vector2f.new(78, 78)
 fillrect.shape.fill_color = Color.new(255, 55, 15)
-fillrect.stylebox = ResourceLoader.load_stylebox("res/styleboxes/default.json")
+fillrect.stylebox = ResourceLoader.load_StyleBox("res/styleboxes/default.json")
 
 print("rect pos: ", transform.position.x, transform.position.y)
 print("rect color: ", fillrect.shape.fill_color.r, fillrect.shape.fill_color.g, fillrect.shape.fill_color.b)

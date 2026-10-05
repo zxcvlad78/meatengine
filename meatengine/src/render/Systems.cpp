@@ -14,6 +14,11 @@ namespace me::RenderSystems {
 
         me::TileMapSystems::render(registry, window);
         me::SpriteSystems::render(registry, window);
+    }
+
+    void render_default_view(entt::registry& registry, sf::RenderWindow& window) {
+        if (!enabled) return;
+
 		me::ui::Systems::render(registry, window);
 
     }

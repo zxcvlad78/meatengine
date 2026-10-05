@@ -23,7 +23,6 @@ void me::lua_bindings::init_sfml(sol::state& lua) {
         "y", &sf::Vector2i::y
     );
 
-    // ─── sf::Color ───
     lua.new_usertype<sf::Color>("Color",
         sol::constructors<
             sf::Color(),
@@ -65,6 +64,31 @@ void me::lua_bindings::init_sfml(sol::state& lua) {
         "position", &sf::FloatRect::position,
         "size",     &sf::FloatRect::size
     );
+
+    lua.new_usertype<sf::RectangleShape>("RectangleShape",
+        sol::constructors<sf::RectangleShape(), sf::RectangleShape(sf::Vector2f)>(),
+        "position", sol::property(
+            [](sf::RectangleShape& s) { return s.getPosition(); },
+            [](sf::RectangleShape& s, sf::Vector2f p) { s.setPosition(p); }
+        ),
+        "size", sol::property(
+            [](sf::RectangleShape& s) { return s.getSize(); },
+            [](sf::RectangleShape& s, sf::Vector2f sz) { s.setSize(sz); }
+        ),
+        "fill_color", sol::property(
+            [](sf::RectangleShape& s) { return s.getFillColor(); },
+            [](sf::RectangleShape& s, sf::Color c) { s.setFillColor(c); }
+        ),
+        "outline_color", sol::property(
+            [](sf::RectangleShape& s) { return s.getOutlineColor(); },
+            [](sf::RectangleShape& s, sf::Color c) { s.setOutlineColor(c); }
+        ),
+        "outline_thickness", sol::property(
+            [](sf::RectangleShape& s) { return s.getOutlineThickness(); },
+            [](sf::RectangleShape& s, float t) { s.setOutlineThickness(t); }
+        )
+    );
+
 
     lua.new_usertype<sf::Sprite>("sf_Sprite",
         sol::no_constructor,

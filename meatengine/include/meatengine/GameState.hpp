@@ -14,6 +14,7 @@ public:
     virtual void update_deferred(sf::RenderWindow& window, entt::registry& registry, float dt) = 0;
     virtual void render(sf::RenderWindow& window, entt::registry& registry, float dt) = 0;
     virtual void render_deferred(sf::RenderWindow& window, entt::registry& registry, float dt) = 0;
+    virtual void render_default_view(sf::RenderWindow& window, entt::registry& registry, float dt) = 0;
     virtual void on_exit(sf::RenderWindow& window, entt::registry& registry) = 0;
 };
 
