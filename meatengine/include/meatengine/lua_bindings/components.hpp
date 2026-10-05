@@ -10,9 +10,23 @@
 #include "meatengine/ResourceLoader.hpp"
 
 namespace me::lua_bindings {
+    inline sol::usertype<entt::registry> get_reg_type(sol::state& lua) {
+        sol::object existing = lua["Registry"];
+        if (existing.valid() && existing.is<sol::table>()) {
+            return sol::usertype<entt::registry>(existing.as<sol::table>());
+        }
+
+        auto ut = lua.new_usertype<entt::registry>("Registry",
+            sol::constructors<entt::registry()>()
+        );
+        ut.set("create",  [](entt::registry& r) { return r.create(); });
+        ut.set("destroy", [](entt::registry& r, entt::entity e) { r.destroy(e); });
+        return ut;
+    }
 
     template <typename Component>
-    void register_component_methods(sol::usertype<entt::registry>& reg_type, const std::string& name) {
+    void register_component_methods(const std::string& name, sol::state& lua) {
+        auto reg_type = get_reg_type(lua);
         reg_type.set("add_" + name,
             [](entt::registry& r, entt::entity e) -> Component& {
                 return r.get_or_emplace<Component>(e);
@@ -35,7 +49,8 @@ namespace me::lua_bindings {
     }
 
     template <typename Component>
-    void register_view_method(sol::usertype<entt::registry>& reg_type, const std::string& name) {
+    void register_view_method(const std::string& name, sol::state& lua) {
+        auto reg_type = get_reg_type(lua);
         reg_type.set("for_each_" + name,
             [](entt::registry& r, sol::function callback) {
                 auto view = r.view<Component>();
@@ -47,9 +62,9 @@ namespace me::lua_bindings {
     }
 
     template <typename Component>
-    void register_component(sol::usertype<entt::registry>& reg_type, const std::string& name) {
-        register_component_methods<Component>(reg_type, name);
-        register_view_method<Component>(reg_type, name);
+    void register_component(const std::string& name, sol::state& lua) {
+        register_component_methods<Component>(name, lua);
+        register_view_method<Component>(name, lua);
     }
 
     template <typename T>

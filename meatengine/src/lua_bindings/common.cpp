@@ -187,16 +187,16 @@ void init_common(sol::state& lua) {
     reg_type.set("create", [](entt::registry& r) { return r.create(); });
     reg_type.set("destroy", [](entt::registry& r, entt::entity e) { r.destroy(e); });
 
-    register_component<me::Transform>       (reg_type, "Transform");
-    register_component<me::ZIndex>          (reg_type, "ZIndex");
-    register_component<me::Velocity>        (reg_type, "Velocity");
-    register_component<me::TileMap>         (reg_type, "TileMap");
-    register_component<me::Camera>          (reg_type, "Camera");
-    register_component<me::Sprite>          (reg_type, "Sprite");
-    register_component<me::SpriteAnimation> (reg_type, "SpriteAnimation");
-    register_component<me::ui::FillRect>    (reg_type, "FillRect");
-    register_component<me::ui::Label>       (reg_type, "Label");
-    register_component<me::ui::Interactable>(reg_type, "Interactable");
+    register_component<me::Transform>("Transform", lua);
+    register_component<me::ZIndex>("ZIndex", lua);
+    register_component<me::Velocity>("Velocity", lua);
+    register_component<me::TileMap>("TileMap", lua);
+    register_component<me::Camera>("Camera", lua);
+    register_component<me::Sprite>("Sprite", lua);
+    register_component<me::SpriteAnimation>("SpriteAnimation", lua);
+    register_component<me::ui::FillRect>("FillRect", lua);
+    register_component<me::ui::Label>("Label", lua);
+    register_component<me::ui::Interactable>("Interactable", lua);
 }
 
 } // namespace me::lua_bindings
