@@ -1,6 +1,6 @@
 local world = get_global_registry()
 
-local test_texture = ResourceLoader.load_Texture("res/textures/test.png")
+local test_texture = ResourceLoader.load_Texture("data/core/res/textures/test.png")
 
 function test_spawn_entity()
     local entity = world:create()

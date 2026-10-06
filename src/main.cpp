@@ -5,7 +5,7 @@
 #include "GodLike.hpp"
 
 int main() {
-	godlike::lua_bindings::init(me::ScriptingServer::lua());
+ 	godlike::lua_bindings::init(me::ScriptingServer::lua());
 
 	me::ModLoader::init_dir("data");
 
