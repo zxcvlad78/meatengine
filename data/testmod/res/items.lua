@@ -1,0 +1,1 @@
+ItemRegistry.register("testmod:sexmod", 1, "")

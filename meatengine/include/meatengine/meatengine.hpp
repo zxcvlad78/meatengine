@@ -9,6 +9,7 @@
 
 #include<meatengine/ScriptingServer.hpp>
 #include<meatengine/ModLoader.hpp>
+#include<meatengine/PackedEntity.hpp>
 
 #include<meatengine/ui/Components.hpp>
 #include<meatengine/ui/Systems.hpp>

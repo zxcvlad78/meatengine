@@ -21,7 +21,7 @@ namespace godlike::lua_bindings {
         sol::table ir = lua.create_table();
         lua["ItemRegistry"] = ir;
 
-        ir.set_function("register_def",
+        ir.set_function("register",
             [](const std::string& id, uint32_t max_stack, std::string icon_path) {
                 return ItemRegistry::register_def(id, max_stack, std::move(icon_path));
             }
@@ -50,6 +50,9 @@ namespace godlike::lua_bindings {
             "value", &components::MoveSpeed::value
         );
 
+        lua.new_usertype<components::PlayerInput>("PlayerInput", sol::no_constructor);
+
         me::lua_bindings::register_component<components::MoveSpeed>("MoveSpeed", lua);
+        me::lua_bindings::register_tag<components::PlayerInput>("PlayerInput", lua);
     }
 }

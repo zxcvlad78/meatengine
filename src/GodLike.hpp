@@ -6,15 +6,7 @@
 class GodLike : public me::GameState {
 public:
     void on_enter(sf::RenderWindow& window, entt::registry& registry) override {
-        {auto entity = registry.create(); // player
-            auto& transform = registry.emplace<me::Transform>(entity);
-            registry.emplace<me::Velocity>(entity);
-            registry.emplace<godlike::components::PlayerInput>(entity);
-            registry.emplace<godlike::components::MoveSpeed>(entity);
-            auto& camera = registry.emplace<me::Camera>(entity); {
-                camera.zoom = 2.f;
-            }
-        }
+        me::PackedEntity::spawn("testmod:player", registry);
 
         {auto entity = registry.create(); // tilemap
             registry.emplace<me::Transform>(entity);

@@ -206,14 +206,7 @@ bool ModLoader::load_mod(const modinfo::ModInfo& mod) {
     lua["MOD_NAME"] = mod.name;
     lua["MOD_PATH"] = mod.path;
 
-    auto r = lua.safe_script_file(init_path.string());
-    if (!r.valid()) {
-        sol::error err = r;
-        throw std::runtime_error(
-            "[ModLoader] error loading '" + mod.name + "': " + err.what()
-        );
-        return false;
-    }
+    ScriptingServer::run_file(init_path.string());
 
     std::cout << "[ModLoader] successfully loaded '" << mod.name << "'" << std::endl;
     return true;

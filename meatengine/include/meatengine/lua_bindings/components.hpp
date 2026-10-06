@@ -62,6 +62,26 @@ namespace me::lua_bindings {
     }
 
     template <typename Component>
+    void register_tag(const std::string& name, sol::state& lua) {
+        auto reg_type = get_reg_type(lua);
+        reg_type.set("add_" + name,
+            [](entt::registry& r, entt::entity e) {
+                if (!r.any_of<Component>(e))
+                    r.emplace<Component>(e);
+            });
+
+        reg_type.set("has_" + name,
+            [](entt::registry& r, entt::entity e) -> bool {
+                return r.all_of<Component>(e);
+            });
+
+        reg_type.set("remove_" + name,
+            [](entt::registry& r, entt::entity e) {
+                r.remove<Component>(e);
+            });
+    }
+
+    template <typename Component>
     void register_component(const std::string& name, sol::state& lua) {
         register_component_methods<Component>(name, lua);
         register_view_method<Component>(name, lua);

@@ -15,6 +15,24 @@ void init(sol::state& lua) {
 }
 
 void init_common(sol::state& lua) {
+    sol::table pe_table = lua.create_table();
+    lua["PackedEntity"] = pe_table;
+
+    pe_table.set_function("register",
+        [](const std::string& id, sol::protected_function fn) {
+            me::PackedEntity::register_pe(id, fn);
+        });
+
+    pe_table.set_function("spawn",
+        [](const std::string& id, entt::registry& reg) -> entt::entity {
+            return me::PackedEntity::spawn(id, reg);
+        });
+
+    pe_table.set_function("exists",
+        [](const std::string& id) -> bool {
+            return me::PackedEntity::exists(id);
+        });
+
     auto sprite_ut = lua.new_usertype<me::Sprite>("Sprite",
         sol::constructors<me::Sprite()>(),
 

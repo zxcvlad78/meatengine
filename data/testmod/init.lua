@@ -1,1 +1,2 @@
-print(MOD_NAME, "Redi", " paft: ", MOD_PATH)
+dofile(MOD_PATH .. "/res/packed_entities.lua")
+dofile(MOD_PATH .. "/res/items.lua")
