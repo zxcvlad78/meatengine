@@ -49,6 +49,8 @@ namespace me {
         std::shared_ptr<Texture> operator()(const std::string& path) const;
     };
 
+
+
     struct SoundBuffer {
         using result_type = std::shared_ptr<SoundBuffer>;
 

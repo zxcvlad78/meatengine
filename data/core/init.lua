@@ -1,0 +1,1 @@
+dofile(MOD_PATH .. "/res/items.lua")

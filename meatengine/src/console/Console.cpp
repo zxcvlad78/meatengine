@@ -117,6 +117,8 @@ namespace me {
     }
 
     void Console::init(me::MainLoop& main_loop, sf::Font& f, uint16_t character_size) {
+        if (inited) return;
+
         ScriptingServer::lua().set_function("print", lua_print);
         load_cfg(main_loop.get_window());
         load_history();
@@ -162,6 +164,7 @@ namespace me {
         console_commands::init(main_loop);
         print_success("Console initialized! Type 'help' for available commands");
         texts_dirty = true;
+        inited = true;
     }
 
     void Console::show() { visible = true; }
@@ -477,6 +480,8 @@ namespace me {
     }
 
     void Console::update(sf::RenderWindow& window, float dt) {
+        if (!inited) return;
+
         if (!visible) return;
         update_cursor(dt);
 
@@ -575,6 +580,7 @@ namespace me {
     }
 
     void Console::render(sf::RenderWindow& window) {
+        if (!inited) return;
         if (!visible) return;
 
         window.draw(background_rect);

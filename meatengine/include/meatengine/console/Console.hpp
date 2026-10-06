@@ -80,6 +80,8 @@ namespace me {
             sf::Vector2f position;
         };
 
+        bool inited = false;
+
         bool visible = false;
         bool texts_dirty = true;
 

@@ -36,10 +36,10 @@ namespace me {
             return path;
         }
 
-		else if (path.starts_with("res://")) {
-			std::string total_path = path; total_path.erase(0, 6);
-			return (std::filesystem::path(get_user_config_dir()) / total_path).string();
-		}
+		// else if (path.starts_with("res://")) {
+		// 	std::string total_path = path; total_path.erase(0, 6);
+		// 	return (std::filesystem::path("" / total_path).string();
+		// }
 		else if (path.starts_with("user://")) {
 			std::string total_path = path; total_path.erase(0, 7);
 			return (std::filesystem::path(get_user_config_dir()) / total_path).string();
@@ -76,4 +76,5 @@ namespace me {
         f.write(text.data(), static_cast<std::streamsize>(text.size()));
         return f.good();
     }
+
 } // namespace me

@@ -16,11 +16,11 @@ public:
             }
         }
 
-        {auto entity = registry.create();
+        {auto entity = registry.create(); // tilemap
             registry.emplace<me::Transform>(entity);
             auto& tilemap = registry.emplace<me::TileMap>(entity); {
-                tilemap.tileset = me::ResourceLoader::load<me::TileSet>("res/tilesets/tileset.json");
-                tilemap.load_tiles("res/tilemaps/tilemap.json");
+                tilemap.tileset = me::ResourceLoader::load<me::TileSet>("data/core/res/tilesets/tileset.json");
+                tilemap.load_tiles("data/core/res/tilemaps/tilemap.json");
             }
         }
 
@@ -33,6 +33,7 @@ public:
     void update(sf::RenderWindow& window, entt::registry& registry, float dt) override {
         godlike::systems::player_input(registry, window);
     }
+    
     void update_deferred(sf::RenderWindow& window, entt::registry& registry, float dt) override {
 
     }

@@ -77,9 +77,14 @@ namespace me {
         ui::updating::install(m_registry);
 
         // потом как нибудь
-        entt::resource<me::Font> mainfont = me::ResourceLoader::load<Font>("res/fonts/mainfont.ttf");
+        entt::resource<me::Font> mainfont = me::ResourceLoader::load<Font>("data/core/res/fonts/mainfont.ttf");
         if (mainfont.handle()) {
             Console::get_instance().init(*this, mainfont->res, 16);
+        } else {
+            std::shared_ptr<me::Font> default_font = ResourceLoader::get_default<Font>();
+            if (default_font != nullptr) {
+                Console::get_instance().init(*this, default_font->res, 16);
+            }
         }
         //
     }

@@ -6,6 +6,9 @@
 			"displayName": "Ninja Debug",
 			"generator": "Ninja",
 			"binaryDir": "${sourceDir}/build/Debug",
+			"environment": {
+				"VSLANG": "1033"
+			},
 			"cacheVariables": {
 				"CMAKE_BUILD_TYPE": "Debug",
                 "CMAKE_MAKE_PROGRAM": "$env{NINJA_ROOT}/ninja.exe",
@@ -18,6 +21,9 @@
 			"displayName": "Ninja Release",
 			"generator": "Ninja",
 			"binaryDir": "${sourceDir}/build/Release",
+			"environment": {
+				"VSLANG": "1033"
+			},
 			"cacheVariables": {
 				"CMAKE_BUILD_TYPE": "Release",
                 "CMAKE_MAKE_PROGRAM": "$env{NINJA_ROOT}/ninja.exe",

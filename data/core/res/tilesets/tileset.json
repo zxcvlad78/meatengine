@@ -1,0 +1,5 @@
+{
+    "type": "TilesetResource",
+    "tile_size": 16,
+    "texture_path": "data/core/res/textures/tileset.png"
+}

@@ -8,6 +8,7 @@
 #include<meatengine/rng.hpp>
 
 #include<meatengine/ScriptingServer.hpp>
+#include<meatengine/ModLoader.hpp>
 
 #include<meatengine/ui/Components.hpp>
 #include<meatengine/ui/Systems.hpp>

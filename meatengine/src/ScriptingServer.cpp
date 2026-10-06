@@ -15,9 +15,12 @@ namespace me {
 
         lua.open_libraries(
             sol::lib::base,
-            sol::lib::math,
+            sol::lib::package,
+            sol::lib::table,
             sol::lib::string,
-            sol::lib::table
+            sol::lib::math,
+            sol::lib::io,
+            sol::lib::os
         );
 
         lua_bindings::init(lua);
