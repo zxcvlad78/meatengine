@@ -28,6 +28,7 @@ namespace me {
         void set_framerate_limit(float value);
         float get_framerate_limit();
 
+        float get_fps();
         inline static float dt_scale = 1.f;
 
     private:
@@ -52,6 +53,6 @@ namespace me {
         float m_fps = 0.f;
         float m_fps_accum = 0.f;
         int m_fps_frames = 0;
-        static constexpr float m_fps_update_interval = 0.25f;
+        static constexpr float m_fps_update_interval = 0.5f;
     };
 } // namespace me

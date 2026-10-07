@@ -63,24 +63,47 @@ namespace me::ui {
 	};
 
 	struct Label {
-		std::optional<sf::Text> sf_text;
+	private:
+		entt::resource<me::Font> _font{};
+	public:
+		std::optional<sf::Text> text;
+
+		entt::resource<me::Font> get_font() { return _font; }
+        void set_font(entt::resource<me::Font> font) {
+            if (!font) {
+                _font = {};
+                text.reset();
+                return;
+            }
+            _font = std::move(font);
+            text.emplace(_font->res);
+			dirty = true;
+        }
+
+        void set_font(me::Font& font) {
+            auto h = me::ResourceLoader::find_handle(&font);
+            if (!h) {
+                throw std::runtime_error("Label::set_font: Font not from ResourceLoader");
+            }
+            set_font(entt::resource<me::Font>{h});
+        }
 
 		bool dirty = true;
 
 		void update_fill(entt::registry& reg, entt::entity e) {
-			if (!sf_text.has_value()) return;
+			if (!text.has_value()) return;
 			if (auto* fr = reg.try_get<FillRect>(e)) {
 				if (!dirty) return;
 				if (!fr->stylebox) return;
 	
 				if (reg.all_of<Disabled>(e))
-					sf_text->setFillColor(fr->stylebox->get_value<sf::Color>("font_disabled_color", sf::Color::White));
+					text->setFillColor(fr->stylebox->get_value<sf::Color>("font_disabled_color", sf::Color::White));
 				else if (reg.all_of<Pressed>(e))
-					sf_text->setFillColor(fr->stylebox->get_value<sf::Color>("font_pressed_color", sf::Color::White));
+					text->setFillColor(fr->stylebox->get_value<sf::Color>("font_pressed_color", sf::Color::White));
 				else if (reg.all_of<Hovered>(e))
-					sf_text->setFillColor(fr->stylebox->get_value<sf::Color>("font_hovered_color", sf::Color::White));
+					text->setFillColor(fr->stylebox->get_value<sf::Color>("font_hovered_color", sf::Color::White));
 				else 
-					sf_text->setFillColor(fr->stylebox->get_value<sf::Color>("font_color", sf::Color::White));
+					text->setFillColor(fr->stylebox->get_value<sf::Color>("font_color", sf::Color::White));
 			
 			}
 
@@ -88,7 +111,7 @@ namespace me::ui {
 		}
 
 		Label() = default; 
-		Label(me::Font& font) : sf_text(font.res) { }
+		Label(me::Font& font) : text(font.res) { }
 	};
 
 	struct Container {

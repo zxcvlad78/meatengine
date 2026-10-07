@@ -39,6 +39,7 @@ namespace me {
         m_window.setFramerateLimit(m_target_fps);
     }
     float MainLoop::get_framerate_limit() { return m_target_fps; }
+    float MainLoop::get_fps() { return m_fps; }
 
     void MainLoop::update_engine(float dt) {
         me::systems::movement(m_registry, dt);

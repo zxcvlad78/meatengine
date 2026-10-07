@@ -41,12 +41,15 @@ namespace me::ui::Systems {
         }
 
         for (auto [e, l] : reg.view<Label>().each()) {
+            if (!l.text.has_value()) continue;
+            
             auto* t = reg.try_get<Transform>(e);
             if (!t) continue;
-            l.sf_text->setPosition(t->position);
-            l.sf_text->setRotation(t->rotation);
-            l.sf_text->setScale(t->scale);
-            window.draw(*l.sf_text);
+
+            l.text->setPosition(t->position);
+            l.text->setRotation(t->rotation);
+            l.text->setScale(t->scale);
+            window.draw(*l.text);
         }
     }
 

@@ -116,9 +116,11 @@ namespace me {
         return i;
     }
 
+
     void Console::init(me::MainLoop& main_loop, sf::Font& f, uint16_t character_size) {
         if (inited) return;
 
+        _mainloop = &main_loop;
         ScriptingServer::lua().set_function("print", lua_print);
         load_cfg(main_loop.get_window());
         load_history();
@@ -128,6 +130,7 @@ namespace me {
         input_rect_text = std::make_unique<sf::Text>(f);
         head_title = std::make_unique<sf::Text>(f);
         suggestion_text = std::make_unique<sf::Text>(f);
+        fps_text = std::make_unique<sf::Text>(f);
 
         selection_rect.setFillColor(selection_color);
 
@@ -141,7 +144,7 @@ namespace me {
 
         head_title->setCharacterSize(24);
         head_title->setFillColor(sf::Color(200, 180, 180));
-        head_title->setString("MeatEngine Console");
+        head_title->setString("me::Console");
 
         input_rect.setFillColor(foreground_color);
         input_rect.setOutlineThickness(theme_outline_thickness);
@@ -501,6 +504,17 @@ namespace me {
 
         head_title->setPosition({10.f, 5.f});
 
+        if (_mainloop != nullptr) {
+            auto title_position = head_title->getPosition();
+            auto title_bounds = head_title->getLocalBounds();
+            fps_text->setCharacterSize(char_size * 0.90f);
+            fps_text->setPosition(title_position + sf::Vector2f{
+                title_bounds.size.x + 5.f,
+                title_bounds.size.y / 2.f
+            });
+            fps_text->setString(std::to_string(static_cast<int>(_mainloop->get_fps())) + " fps");
+        }
+
         input_rect.setFillColor(foreground_color);
         input_rect.setOutlineThickness(theme_outline_thickness);
         input_rect.setOutlineColor(theme_outline_color);
@@ -586,6 +600,7 @@ namespace me {
         window.draw(background_rect);
         window.draw(head_rect);
         window.draw(*head_title);
+        window.draw(*fps_text);
         window.draw(input_rect);
         if (text_selection.is_active()) window.draw(selection_rect);
         window.draw(*input_rect_text);

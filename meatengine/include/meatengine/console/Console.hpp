@@ -51,14 +51,15 @@ namespace me {
 
         void print(const std::string& text);
         void print_plain(const std::string& text, sf::Color color = sf::Color::White);
-        void print_error(const std::string& text)   { print_plain("[ERROR] " + text, sf::Color(255, 80, 80)); }
+        void print_error(const std::string& text) { print_plain("[ERROR] " + text, sf::Color(255, 80, 80)); }
         void print_warning(const std::string& text) { print_plain("[WARNING] " + text, sf::Color(255, 200, 50)); }
         void print_success(const std::string& text) { print_plain("[OK] " + text, sf::Color(100, 255, 100)); }
 
         void register_command(const std::string& name,
-                              std::function<void(const std::vector<std::string>&)> handler,
-                              const std::string& description,
-                              const std::string& usage);
+            std::function<void(const std::vector<std::string>&)> handler,
+            const std::string& description,
+            const std::string& usage
+        );
         void unregister_command(const std::string& name);
         void execute_command(const std::string& command_line);
 
@@ -80,6 +81,8 @@ namespace me {
             sf::Vector2f position;
         };
 
+        MainLoop* _mainloop;
+
         bool inited = false;
 
         bool visible = false;
@@ -97,6 +100,7 @@ namespace me {
         std::unique_ptr<sf::Text> input_rect_text;
         std::unique_ptr<sf::Text> head_title;
         std::unique_ptr<sf::Text> suggestion_text;
+        std::unique_ptr<sf::Text> fps_text;
 
         std::string input_string;
         std::deque<std::vector<BBCode::TextFragment>> messages;
@@ -133,6 +137,7 @@ namespace me {
 
         std::vector<RenderItem> render_items;
         float total_text_height = 0.f;
+
 
         void rebuild_display_texts();
         void update_scrollbar(sf::RenderWindow& window);

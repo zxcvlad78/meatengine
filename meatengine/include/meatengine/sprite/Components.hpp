@@ -10,7 +10,6 @@ namespace me {
     private:
         std::optional<sf::Sprite> _sprite;
         entt::resource<me::Texture> _texture{};
-
     public:
         sf::Vector2f offset{};
         bool center = false;

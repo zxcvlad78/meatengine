@@ -156,8 +156,9 @@ void init_common(sol::state& lua) {
                 if (!sp) {
                     throw std::runtime_error(
                         "FillRect.stylebox: StyleBox not from ResourceLoader "
-                        "(load it via ResourceLoader.load_stylebox first)");
-                }
+                        "(load it via ResourceLoader.load_stylebox first)"
+                    );}
+                
                 fr.stylebox = entt::resource<me::StyleBox>{sp};
                 fr.dirty = true;
             }
@@ -171,24 +172,40 @@ void init_common(sol::state& lua) {
     lua.new_usertype<me::ui::Label>("Label",
         "text", sol::property(
             [](me::ui::Label& l) -> std::string {
-                return l.sf_text->getString().toAnsiString();
+                return l.text->getString().toAnsiString();
             },
             [](me::ui::Label& l, const std::string& s) {
-                l.sf_text->setString(sf::String::fromUtf8(s.begin(), s.end()));
+                l.text->setString(sf::String::fromUtf8(s.begin(), s.end()));
                 l.dirty = true;
             }
         ),
+        "font", sol::property(
+            [](me::ui::Label& l) -> me::Font* {
+                auto h = l.get_font().handle();
+                return h ? h.get() : nullptr;
+            },
+            [](me::ui::Label& l, me::Font& f) {
+                auto fh = me::ResourceLoader::find_handle(&f);
+                if (!fh) {
+                    throw std::runtime_error(
+                        "Label.font not from ResourceLoader "
+                        "(load it via ResourceLoader.load_Font first)"
+                    );}
+                
+                l.set_font(f);
+            }
+        ),
         "character_size", sol::property(
-            [](me::ui::Label& l) { return l.sf_text->getCharacterSize(); },
-            [](me::ui::Label& l, unsigned int s) { l.sf_text->setCharacterSize(s); }
+            [](me::ui::Label& l) { return l.text->getCharacterSize(); },
+            [](me::ui::Label& l, unsigned int s) { l.text->setCharacterSize(s); }
         ),
         "color", sol::property(
-            [](me::ui::Label& l) { return l.sf_text->getFillColor(); },
-            [](me::ui::Label& l, sf::Color c) { l.sf_text->setFillColor(c); }
+            [](me::ui::Label& l) { return l.text->getFillColor(); },
+            [](me::ui::Label& l, sf::Color c) { l.text->setFillColor(c); }
         ),
         "position", sol::property(
-            [](me::ui::Label& l) { return l.sf_text->getPosition(); },
-            [](me::ui::Label& l, sf::Vector2f p) { l.sf_text->setPosition(p); }
+            [](me::ui::Label& l) { return l.text->getPosition(); },
+            [](me::ui::Label& l, sf::Vector2f p) { l.text->setPosition(p); }
         ),
         "dirty", &me::ui::Label::dirty
     );
