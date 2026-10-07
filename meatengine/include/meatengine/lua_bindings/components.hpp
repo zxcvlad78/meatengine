@@ -54,8 +54,7 @@ namespace me::lua_bindings {
         reg_type.set("for_each_" + name,
             [](entt::registry& r, sol::function callback) {
                 auto view = r.view<Component>();
-                for (auto entity : view) {
-                    Component& c = view.get<Component>(entity);
+                for (auto [entity, c] : view) {
                     callback(entity, std::ref(c));
                 }
             });
