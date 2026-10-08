@@ -9,7 +9,6 @@
 #include <meatengine/Resources.hpp>
 #include <meatengine/ResourceLoader.hpp>
 
-
 namespace me::ui {
 	struct UIRoot {};
 
@@ -25,9 +24,13 @@ namespace me::ui {
 	struct Pressed {};
 	struct Focused {};
 
-	enum class LayoutMode { FullRect, Center, Horizontal, Vertical };
+	namespace LayoutMode {
+		struct Center {};
+		struct Horizontal {};
+		struct Vertical {};
+	}
+
 	struct Layout {
-		LayoutMode mode = LayoutMode::FullRect;
 		float spacing = 0.f;
 		bool fit_children = false;
 	};

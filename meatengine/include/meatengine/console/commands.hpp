@@ -6,11 +6,11 @@
 
 
 namespace me::console_commands {
-    inline void init(me::MainLoop& main_loop) {
+    inline void init() {
         Console::get_instance().register_command(
             "exit",
-            [&main_loop](const std::vector<std::string>& args) {
-                main_loop.get_window().close();
+            [](const std::vector<std::string>& args) {
+                me::MainLoop::get_window().close();
             },
             "Close window and exit",
             "exit"
@@ -59,27 +59,27 @@ namespace me::console_commands {
         );
         Console::get_instance().register_command(
             "cfg.load",
-            [&main_loop](const std::vector<std::string>& args) {
-                Console::get_instance().load_cfg(main_loop.get_window());
+            [](const std::vector<std::string>& args) {
+                Console::get_instance().load_cfg(me::MainLoop::get_window());
             },
             "Load cfg file",
             "cfg.load"
         );
         Console::get_instance().register_command(
             "cfg.reset",
-            [&main_loop](const std::vector<std::string>& args) {
-                Console::get_instance().reset_cfg(main_loop.get_window());
+            [](const std::vector<std::string>& args) {
+                Console::get_instance().reset_cfg(me::MainLoop::get_window());
             },
             "Reset cfg file",
             "cfg.reset"
         );
         Console::get_instance().register_command(
             "fps.max",
-            [&main_loop](const std::vector<std::string>& args) {
+            [](const std::vector<std::string>& args) {
                 if (!args.empty()) {
                     try {
                         int fps = std::stoi(args[0]);
-                        main_loop.set_framerate_limit(fps);
+                        me::MainLoop::set_framerate_limit(fps);
                     } catch (const std::exception& e) {
                         Console::get_instance().print_error(e.what());
                     }

@@ -30,7 +30,7 @@ namespace me::ui::Systems {
 
         for (auto [z, e] : order) {
             auto& fr = reg.get<FillRect>(e);
-            auto* t  = reg.try_get<Transform>(e);
+            auto* t = reg.try_get<Transform>(e);
             if (!t) continue;
 
             fr.shape.setPosition(t->position);
@@ -40,15 +40,13 @@ namespace me::ui::Systems {
             window.draw(fr.shape);
         }
 
-        for (auto [e, l] : reg.view<Label>().each()) {
+        for (auto [e, l, t] : reg.view<Label, Transform>().each()) {
             if (!l.text.has_value()) continue;
-            
-            auto* t = reg.try_get<Transform>(e);
-            if (!t) continue;
 
-            l.text->setPosition(t->position);
-            l.text->setRotation(t->rotation);
-            l.text->setScale(t->scale);
+            l.text->setPosition(t.position);
+            l.text->setRotation(t.rotation);
+            l.text->setScale(t.scale);
+            
             window.draw(*l.text);
         }
     }

@@ -39,7 +39,7 @@ namespace me {
 
         static Console& get_instance();
 
-        void init(me::MainLoop& main_loop, sf::Font& f, uint16_t character_size = 14);
+        void init(sf::Font& f, uint16_t character_size = 14);
         void update(sf::RenderWindow& window, float dt);
         void render(sf::RenderWindow& window);
         void handle_event(const sf::Event& event, sf::RenderWindow& window);
@@ -80,8 +80,6 @@ namespace me {
             sf::Text text;
             sf::Vector2f position;
         };
-
-        MainLoop* _mainloop;
 
         bool inited = false;
 

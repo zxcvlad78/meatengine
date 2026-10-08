@@ -10,6 +10,8 @@
 #include<meatengine/ScriptingServer.hpp>
 #include<meatengine/ModLoader.hpp>
 #include<meatengine/PackedEntity.hpp>
+#include<meatengine/ScriptedState.hpp>
+#include<meatengine/ScriptedStateRegistry.hpp>
 
 #include<meatengine/ui/Components.hpp>
 #include<meatengine/ui/Systems.hpp>
@@ -31,3 +33,5 @@
 #include<meatengine/timer/Systems.hpp>
 #include<meatengine/tilemap/Components.hpp>
 #include<meatengine/tilemap/Systems.hpp>
+
+#include <meatengine/to_string.hpp>

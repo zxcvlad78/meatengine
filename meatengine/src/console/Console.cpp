@@ -17,6 +17,7 @@ namespace me {
             if (i > 1) result += '\t';
             result.append(s, len);
             lua_pop(L, 1);
+            std::cout << s << std::endl;
         }
         Console::get_instance().print(result);
         return 0;
@@ -117,12 +118,11 @@ namespace me {
     }
 
 
-    void Console::init(me::MainLoop& main_loop, sf::Font& f, uint16_t character_size) {
+    void Console::init(sf::Font& f, uint16_t character_size) {
         if (inited) return;
 
-        _mainloop = &main_loop;
         ScriptingServer::lua().set_function("print", lua_print);
-        load_cfg(main_loop.get_window());
+        load_cfg(MainLoop::get_window());
         load_history();
         font_ptr = &f;
         char_size = character_size;
@@ -164,7 +164,7 @@ namespace me {
         cursor_rect.setSize({2.f, static_cast<float>(char_size)});
 
         register_default_commands();
-        console_commands::init(main_loop);
+        console_commands::init();
         print_success("Console initialized! Type 'help' for available commands");
         texts_dirty = true;
         inited = true;
@@ -504,16 +504,14 @@ namespace me {
 
         head_title->setPosition({10.f, 5.f});
 
-        if (_mainloop != nullptr) {
-            auto title_position = head_title->getPosition();
-            auto title_bounds = head_title->getLocalBounds();
-            fps_text->setCharacterSize(char_size * 0.90f);
-            fps_text->setPosition(title_position + sf::Vector2f{
-                title_bounds.size.x + 5.f,
-                title_bounds.size.y / 2.f
-            });
-            fps_text->setString(std::to_string(static_cast<int>(_mainloop->get_fps())) + " fps");
-        }
+        auto title_position = head_title->getPosition();
+        auto title_bounds = head_title->getLocalBounds();
+        fps_text->setCharacterSize(char_size * 0.90f);
+        fps_text->setPosition(title_position + sf::Vector2f{
+            title_bounds.size.x + 5.f,
+            title_bounds.size.y / 2.f
+        });
+        fps_text->setString(std::to_string(static_cast<int>(MainLoop::get_fps())) + " fps");
 
         input_rect.setFillColor(foreground_color);
         input_rect.setOutlineThickness(theme_outline_thickness);

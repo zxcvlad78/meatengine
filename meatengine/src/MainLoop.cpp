@@ -19,20 +19,46 @@
 
 namespace me {
 
+    void MainLoop::init(const std::string& title, sf::VideoMode default_mode) {
+        m_prev_mode = std::move(default_mode);
+        m_window_title = std::move(title);
+        m_registry.ctx().emplace<InputState>();
+        m_window.create(m_prev_mode, title);
+        m_window.setFramerateLimit(144);
+
+        Generic::updating::install(m_registry);
+        ui::updating::install(m_registry);
+
+        // потом как нибудь
+        entt::resource<me::Font> mainfont = me::ResourceLoader::load<Font>("data/core/res/fonts/mainfont.ttf");
+        if (mainfont.handle()) {
+            Console::get_instance().init(mainfont->res, 16);
+        } else {
+            std::shared_ptr<me::Font> default_font = ResourceLoader::get_default<Font>();
+            if (default_font != nullptr) {
+                Console::get_instance().init(default_font->res, 16);
+            }
+        }
+        //
+    }
+
     std::string MainLoop::get_window_title() { return m_window_title; }
     void MainLoop::set_window_title(std::string& new_title) {
         m_window_title = new_title;
         m_window.setTitle(m_window_title);
     }
+    void MainLoop::set_window_title(const std::string& new_title) {
+        m_window_title = new_title;
+        m_window.setTitle(m_window_title);
+    }
+
+    void MainLoop::change_state(std::unique_ptr<GameState> new_state) {
+        m_next_state = std::move(new_state);
+    }
 
     sf::RenderWindow& MainLoop::get_window() { return m_window; }
-    const sf::RenderWindow& MainLoop::get_window() const { return m_window; }
-
     sf::Clock& MainLoop::get_clock() { return m_clock; }
-    const sf::Clock& MainLoop::get_clock() const { return m_clock; }
-
     entt::registry& MainLoop::get_registry() { return m_registry; }
-    const entt::registry& MainLoop::get_registry() const { return m_registry; }
 
     void MainLoop::set_framerate_limit(float value) {
         m_target_fps = value;
@@ -59,39 +85,6 @@ namespace me {
 
     void MainLoop::render_engine_default_view() {
         RenderSystems::render_default_view(m_registry, m_window);
-    }
-
-    MainLoop::MainLoop(const std::string& title, sf::VideoMode default_mode) 
-        : m_prev_mode(default_mode), m_window_title(title) 
-    {
-        m_registry.ctx().emplace<InputState>();
-        m_window.create(m_prev_mode, title);
-        m_window.setFramerateLimit(144);
-
-        ScriptingServer::lua().set_function("get_global_registry",
-            [this]() -> entt::registry& { return m_registry; }
-        );
-        ScriptingServer::lua().set_function("get_fps",
-            [this]() -> float { return m_fps; }
-        );
-        Generic::updating::install(m_registry);
-        ui::updating::install(m_registry);
-
-        // потом как нибудь
-        entt::resource<me::Font> mainfont = me::ResourceLoader::load<Font>("data/core/res/fonts/mainfont.ttf");
-        if (mainfont.handle()) {
-            Console::get_instance().init(*this, mainfont->res, 16);
-        } else {
-            std::shared_ptr<me::Font> default_font = ResourceLoader::get_default<Font>();
-            if (default_font != nullptr) {
-                Console::get_instance().init(*this, default_font->res, 16);
-            }
-        }
-        //
-    }
-
-    void MainLoop::change_state(std::unique_ptr<GameState> new_state) {
-        m_next_state = std::move(new_state);
     }
 
     void MainLoop::process_events() {

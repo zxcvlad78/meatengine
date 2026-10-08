@@ -15,6 +15,67 @@ void init(sol::state& lua) {
 }
 
 void init_common(sol::state& lua) {
+    auto reg_type = get_reg_type(lua);
+
+    lua.new_usertype<sf::RenderWindow>("Window",
+        sol::no_constructor,
+        "size", [](sf::RenderWindow& w) { return w.getSize(); },
+        "close", &sf::RenderWindow::close,
+        "is_open", &sf::RenderWindow::isOpen,
+        "set_title", [](sf::RenderWindow& w, const std::string& s) { w.setTitle(s); });
+
+    sol::table ssr_table = lua.create_table();
+    lua["ScriptedStateRegistry"] = ssr_table;
+
+    ssr_table.set_function("register",
+        [](const std::string& id, sol::table callbacks) {
+            me::ScriptedStateRegistry::register_gs(id, callbacks);
+        });
+
+    ssr_table.set_function("change_to",
+        [](const std::string& id) {
+            me::ScriptedStateRegistry::change_to(id);
+        });
+
+    ssr_table.set_function("exists",
+        [](const std::string& id) -> bool {
+            return me::ScriptedStateRegistry::exists(id);
+        });
+
+    sol::table ml_table = lua.create_table();
+    lua["MainLoop"] = ml_table;
+
+    ml_table.set_function("get_registry",
+        []() -> entt::registry& {
+            return me::MainLoop::get_registry();
+        });
+    
+    ml_table.set_function("get_fps",
+        []() -> float {
+            return me::MainLoop::get_fps();
+        });
+    
+    ml_table.set_function("get_window_title",
+        []() -> std::string {
+            return me::MainLoop::get_window_title();
+        });
+
+    ml_table.set_function("set_window_title",
+        [](const std::string& s) -> void {
+            me::MainLoop::set_window_title(s);
+        });
+
+    ml_table.set_function("get_framerate_limit",
+        []() -> float {
+            return me::MainLoop::get_framerate_limit();
+        });
+
+    ml_table.set_function("set_framerate_limit",
+        [](float v) -> void {
+            me::MainLoop::set_framerate_limit(v);
+        });
+    
+
     sol::table pe_table = lua.create_table();
     lua["PackedEntity"] = pe_table;
 
@@ -214,13 +275,6 @@ void init_common(sol::state& lua) {
         sol::constructors<me::ZIndex()>(),
         "value", &me::ZIndex::value
     );
-
-    auto reg_type = lua.new_usertype<entt::registry>("Registry",
-        sol::constructors<entt::registry()>()
-    );
-
-    reg_type.set("create", [](entt::registry& r) { return r.create(); });
-    reg_type.set("destroy", [](entt::registry& r, entt::entity e) { r.destroy(e); });
 
     register_component<me::Transform>("Transform", lua);
     register_component<me::ZIndex>("ZIndex", lua);

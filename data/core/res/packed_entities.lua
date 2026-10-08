@@ -12,5 +12,5 @@ PackedEntity.register("core:ui:button", function(world)
 end)
 
 -- example
--- in me::Console:
--- lua.run get_global_registry():get_Transform(PackedEntity.spawn("core:ui:button", get_global_registry())).position = Vector2f.new(300, 150)
+-- in me::Console
+-- lua.run MainLoop.get_registry():get_Transform(PackedEntity.spawn("core:ui:button", MainLoop.get_registry())).position = Vector2f.new(300, 150)

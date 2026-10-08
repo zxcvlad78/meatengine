@@ -18,9 +18,7 @@ namespace me {
             sol::lib::package,
             sol::lib::table,
             sol::lib::string,
-            sol::lib::math,
-            sol::lib::io,
-            sol::lib::os
+            sol::lib::math
         );
 
         lua_bindings::init(lua);

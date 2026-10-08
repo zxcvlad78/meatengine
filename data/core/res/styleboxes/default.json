@@ -3,7 +3,7 @@
 	"foreground_color": [192, 192, 192],
 	"disabled_color": [192, 192, 192, 127],
 	"hovered_color": [210, 210, 210],
-	"outline_thickness": 2.0,
+	"outline_thickness": 4.0,
 	"outline_color": [0, 0, 0],
 	"pressed_color": [160, 160, 160],
 

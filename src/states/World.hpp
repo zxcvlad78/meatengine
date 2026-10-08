@@ -3,7 +3,9 @@
 #include <meatengine/meatengine.hpp>
 #include <godlike/godlike.hpp>
 
-class GodLike : public me::GameState {
+namespace godlike::states {
+ 
+class World : public me::GameState {
 public:
     void on_enter(sf::RenderWindow& window, entt::registry& registry) override {
         me::PackedEntity::spawn("testmod:player", registry);
@@ -45,3 +47,5 @@ public:
 
 	}
 };
+
+}
