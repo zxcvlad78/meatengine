@@ -24,12 +24,25 @@ void init_common(sol::state& lua) {
         "is_open", &sf::RenderWindow::isOpen,
         "set_title", [](sf::RenderWindow& w, const std::string& s) { w.setTitle(s); });
 
+    sol::table gsr_table = lua.create_table();
+    lua["GameStateRegistry"] = gsr_table;
+
+    gsr_table.set_function("change_to",
+        [](const std::string& id) {
+            me::GameStateRegistry::change_to(id);
+        });
+
+    gsr_table.set_function("exists",
+        [](const std::string& id) -> bool {
+            return me::GameStateRegistry::exists(id);
+        });
+
     sol::table ssr_table = lua.create_table();
     lua["ScriptedStateRegistry"] = ssr_table;
 
     ssr_table.set_function("register",
         [](const std::string& id, sol::table callbacks) {
-            me::ScriptedStateRegistry::register_gs(id, callbacks);
+            me::ScriptedStateRegistry::register_ss(id, callbacks);
         });
 
     ssr_table.set_function("change_to",

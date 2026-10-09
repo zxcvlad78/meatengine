@@ -2,6 +2,7 @@
 
 #include<meatengine/MainLoop.hpp>
 #include<meatengine/GameState.hpp>
+#include<meatengine/GameStateRegistry.hpp>
 
 #include<meatengine/Generic.hpp>
 #include<meatengine/parsing.hpp>

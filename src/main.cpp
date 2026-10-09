@@ -2,8 +2,8 @@
 
 #include <meatengine/meatengine.hpp>
 #include <godlike/lua_bindings/common.hpp>
-#include "states/World.hpp"
-#include "states/MainMenu.hpp"
+#include <godlike/states/World.hpp>
+#include <godlike/states/MainMenu.hpp>
 
 int main() {
 	// init lua bindings first!!!

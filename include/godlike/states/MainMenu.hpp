@@ -1,9 +1,14 @@
 #pragma once
 #include <meatengine/meatengine.hpp>
 
-namespace name {
+namespace godlike::states {
 
-class GameStateTemplate : public me::GameState {
+namespace tags {
+    struct BGFillRect {};
+    struct CButton {};
+}
+
+class MainMenu : public me::GameState {
 
 public:
     void on_enter(sf::RenderWindow& window, entt::registry& registry) override;

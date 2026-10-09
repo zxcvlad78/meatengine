@@ -10,7 +10,7 @@ class ScriptedStateRegistry {
 public:
     ScriptedStateRegistry() = delete;
 
-    static void register_gs(const std::string& id, sol::table callbacks);
+    static void register_ss(const std::string& id, sol::table callbacks);
     static void change_to(const std::string& id);
     static bool exists(const std::string& id);
 
