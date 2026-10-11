@@ -13,11 +13,6 @@ public:
 
     void set_on_enter(sol::protected_function fn) { _on_enter = std::move(fn); }
     void set_on_exit(sol::protected_function fn) { _on_exit = std::move(fn); }
-    void set_update(sol::protected_function fn) { _update = std::move(fn); }
-    void set_update_deferred(sol::protected_function fn) { _update_deferred = std::move(fn); }
-    void set_render(sol::protected_function fn) { _render = std::move(fn); }
-    void set_render_deferred(sol::protected_function fn) { _render_deferred = std::move(fn); }
-    void set_render_default_view(sol::protected_function fn) { _render_default_view = std::move(fn); }
     void set_handle_event(sol::protected_function fn) { _handle_event = std::move(fn); }
 
     const std::string& name() const { return _name; }
@@ -28,21 +23,6 @@ public:
     void on_exit(sf::RenderWindow& w, entt::registry& r) override {
         _call(_on_exit, "on_exit", w, r);
     }
-    void update(sf::RenderWindow& w, entt::registry& r, float dt) override {
-        _call(_update, "update", w, r, dt);
-    }
-    void update_deferred(sf::RenderWindow& w, entt::registry& r, float dt) override {
-        _call(_update_deferred, "update_deferred", w, r, dt);
-    }
-    void render(sf::RenderWindow& w, entt::registry& r, float dt) override {
-        _call(_render, "render", w, r, dt);
-    }
-    void render_deferred(sf::RenderWindow& w, entt::registry& r, float dt) override {
-        _call(_render_deferred, "render_deferred", w, r, dt);
-    }
-    void render_default_view(sf::RenderWindow& w, entt::registry& r, float dt) override {
-        _call(_render_default_view, "render_default_view", w, r, dt);
-    }
     void handle_event(sf::RenderWindow& w, entt::registry& r, const sf::Event& e) override {
         _call(_handle_event, "handle_event", w, r, e);
     }
@@ -52,11 +32,6 @@ private:
 
     sol::protected_function _on_enter;
     sol::protected_function _on_exit;
-    sol::protected_function _update;
-    sol::protected_function _update_deferred;
-    sol::protected_function _render;
-    sol::protected_function _render_deferred;
-    sol::protected_function _render_default_view;
     sol::protected_function _handle_event;
 
     template<typename... Args>

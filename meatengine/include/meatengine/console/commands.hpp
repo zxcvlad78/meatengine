@@ -103,28 +103,28 @@ namespace me::console_commands {
             "Set audio volume (0.0-100.0)",
             "volume <float>"
         );
-        Console::get_instance().register_command(
-            "speed",
-            [](const std::vector<std::string>& args) {
-                if (!args.empty()) {
-                    try {
-                        float val = std::stof(args[0]);
-                        if (val >= 0.f) {
-                            me::MainLoop::dt_scale = val;
-                            Console::get_instance().print_success("Speed scale set to: " + std::to_string(val));
-                        } else {
-                            Console::get_instance().print_error("Speed scale must be positive");
-                        }
-                    } catch (const std::exception& e) {
-                        Console::get_instance().print_error(e.what());
-                    }
-                } else {
-                    Console::get_instance().print_success("Current speed scale: " + std::to_string(me::MainLoop::dt_scale));
-                }
-            },
-            "Set time speed multiplier",
-            "speed <float>"
-        );
+        // Console::get_instance().register_command(
+        //     "speed",
+        //     [](const std::vector<std::string>& args) {
+        //         if (!args.empty()) {
+        //             try {
+        //                 float val = std::stof(args[0]);
+        //                 if (val >= 0.f) {
+        //                     me::MainLoop::dt_scale = val;
+        //                     Console::get_instance().print_success("Speed scale set to: " + std::to_string(val));
+        //                 } else {
+        //                     Console::get_instance().print_error("Speed scale must be positive");
+        //                 }
+        //             } catch (const std::exception& e) {
+        //                 Console::get_instance().print_error(e.what());
+        //             }
+        //         } else {
+        //             Console::get_instance().print_success("Current speed scale: " + std::to_string(me::MainLoop::dt_scale));
+        //         }
+        //     },
+        //     "Set time speed multiplier",
+        //     "speed <float>"
+        // );
         Console::get_instance().register_command(
             "lua.run",
             [](const std::vector<std::string>& args) {

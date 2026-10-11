@@ -1,0 +1,23 @@
+#pragma once
+#include <meatengine/cmp/Camera.hpp>
+#include <meatengine/cmp/ChildOf.hpp>
+#include <meatengine/cmp/FullScreenScale.hpp>
+#include <meatengine/cmp/Offset.hpp>
+#include <meatengine/cmp/ParentOf.hpp>
+#include <meatengine/cmp/Sprite.hpp>
+#include <meatengine/cmp/SpriteAnimation.hpp>
+#include <meatengine/cmp/TileMap.hpp>
+#include <meatengine/cmp/Timer.hpp>
+#include <meatengine/cmp/Transform.hpp>
+#include <meatengine/cmp/Velocity.hpp>
+#include <meatengine/cmp/ZIndex.hpp>
+//ui
+#include <meatengine/cmp/ui/Container.hpp>
+#include <meatengine/cmp/ui/FillRect.hpp>
+#include <meatengine/cmp/ui/Interactable.hpp>
+#include <meatengine/cmp/ui/Label.hpp>
+#include <meatengine/cmp/ui/Layout.hpp>
+#include <meatengine/cmp/ui/LayoutMode.hpp>
+#include <meatengine/cmp/ui/Padding.hpp>
+#include <meatengine/cmp/ui/States.hpp>
+#include <meatengine/cmp/ui/UIRoot.hpp>

@@ -3,31 +3,21 @@
 #include <meatengine/Resources.hpp>
 #include <meatengine/ResourceLoader.hpp>
 #include <meatengine/console/Console.hpp>
-#include <meatengine/Generic.hpp>
-
-#include <meatengine/ui/Components.hpp>
-#include <meatengine/ui/Systems.hpp>
-
-#include <meatengine/render/Systems.hpp>
-#include <meatengine/sprite/Systems.hpp>
-#include <meatengine/camera/Systems.hpp>
-#include <meatengine/timer/Systems.hpp>
-#include <meatengine/tilemap/Systems.hpp>
-#include <meatengine/systems/Common.hpp>
+#include <meatengine/ctx/InputState.hpp>
 
 #include <meatengine/ScriptingServer.hpp>
+#include <meatengine/SystemRegistry.hpp>
+#include <meatengine/registry_setup.hpp>
 
 namespace me {
 
     void MainLoop::init(const std::string& title, sf::VideoMode default_mode) {
         m_prev_mode = std::move(default_mode);
         m_window_title = std::move(title);
-        m_registry.ctx().emplace<InputState>();
+        m_registry.ctx().emplace<ctx::InputState>();
+        me::registry_setup::run(m_registry);
         m_window.create(m_prev_mode, title);
         m_window.setFramerateLimit(144);
-
-        Generic::updating::install(m_registry);
-        ui::updating::install(m_registry);
 
         // потом как нибудь
         entt::resource<me::Font> mainfont = me::ResourceLoader::load<Font>("data/core/res/fonts/mainfont.ttf");
@@ -65,36 +55,42 @@ namespace me {
         m_window.setFramerateLimit(m_target_fps);
     }
     float MainLoop::get_framerate_limit() { return m_target_fps; }
-    float MainLoop::get_fps() { return m_fps; }
+    float MainLoop::get_dt() { return m_dt; }
 
-    void MainLoop::update_engine(float dt) {
-        me::systems::movement(m_registry, dt);
-        TimerSystems::update(m_registry, dt);
-        TileMapSystems::update(m_registry);
-        me::SpriteSystems::update(m_registry, m_window, dt);
-        me::ui::Systems::process_events(m_registry, m_window);
-		me::ui::Systems::update(m_registry);
-        me::CameraSystems::update(m_registry, m_window, dt);
+    float MainLoop::get_dt_scale() { return m_dt_scale; }
+    void MainLoop::set_dt_scale(float dt) { m_dt_scale = dt; }
 
-        me::Console::get_instance().update(m_window, dt);
+    void MainLoop::set_fixed_dt(float seconds) {
+        if (seconds <= 0.f) {
+            std::cerr << "[MainLoop] set_fixed_dt: invalid value\n";
+            return;
+        }
+        m_fixed_dt = seconds;
     }
 
-    void MainLoop::render_engine() {
-        RenderSystems::render(m_registry, m_window);
+    float MainLoop::get_fixed_dt() { return m_fixed_dt; }
+    float MainLoop::get_fixed_alpha() { return m_fixed_alpha; }
+
+    void MainLoop::set_max_fixed_steps(int n) {
+        if (n < 1) return;
+        m_max_fixed_steps = n;
     }
 
-    void MainLoop::render_engine_default_view() {
-        RenderSystems::render_default_view(m_registry, m_window);
-    }
+    int MainLoop::get_max_fixed_steps() { return m_max_fixed_steps; }
+
 
     void MainLoop::process_events() {
-        while (const std::optional event = m_window.pollEvent()) {
-            auto& in = m_registry.ctx().get<InputState>();
+        auto& in = m_registry.ctx().get<ctx::InputState>();
 
-            in.mouse_pos = m_window.mapPixelToCoords(sf::Mouse::getPosition(m_window));
-            in.mouse_down = sf::Mouse::isButtonPressed(sf::Mouse::Button::Left);
-            in.mouse_just_pressed = false;
-            in.mouse_just_released = false;
+        in.mouse_just_pressed = false;
+        in.mouse_just_released = false;
+        in.mouse_down = sf::Mouse::isButtonPressed(sf::Mouse::Button::Left);
+        in.mouse_pos = m_window.mapPixelToCoords(
+            sf::Mouse::getPosition(m_window),
+            m_window.getDefaultView()
+        );
+
+        while (const std::optional event = m_window.pollEvent()) {
 
             if (event->is<sf::Event::Closed>()) {
                 m_window.close();
@@ -143,39 +139,35 @@ namespace me {
 
             process_events();
 
-            float dt = m_clock.restart().asSeconds();
-            float scaled_dt = dt * dt_scale;
+            m_dt = m_clock.restart().asSeconds();
 
-            m_fps_accum  += dt;
-            m_fps_frames += 1;
-            if (m_fps_accum >= m_fps_update_interval) {
-                m_fps = static_cast<float>(m_fps_frames) / m_fps_accum;
-                m_fps_accum  = 0.f;
-                m_fps_frames = 0;
-            }
+            me::SystemRegistry::run(SystemPhase::Input);
 
-            if (m_current_state) {
-                m_current_state->update(m_window, m_registry, scaled_dt);
+            m_fixed_accum += m_dt;
+            int steps = 0;
+            while (m_fixed_accum >= m_fixed_dt && steps < m_max_fixed_steps) {
+                me::SystemRegistry::run(SystemPhase::FixedUpdate);
+                
+                m_fixed_accum -= m_fixed_dt;
+                ++steps;
             }
-            update_engine(scaled_dt);
-            m_current_state->update_deferred(m_window, m_registry, scaled_dt);
+            
+            if (m_fixed_accum >= m_fixed_dt) {
+                m_fixed_accum = 0.f;
+            }
+            m_fixed_alpha = m_fixed_accum / m_fixed_dt;
+
+            me::SystemRegistry::run(SystemPhase::Update);
+            me::Console::get_instance().update(m_window, m_dt); // remove
 
             m_window.clear(sf::Color::Black);
             
-            if (m_current_state) {
-                m_current_state->render(m_window, m_registry, scaled_dt);
-            }
-            render_engine();
-            m_current_state->render_deferred(m_window, m_registry, scaled_dt);
+            me::SystemRegistry::run(SystemPhase::Render);
 
             m_window.setView(m_window.getDefaultView());
 
-            render_engine_default_view();
-            m_current_state->render_default_view(m_window, m_registry, scaled_dt);
-
-            me::Console::get_instance().render(m_window);
-
-
+            me::SystemRegistry::run(SystemPhase::PostRender);
+            me::Console::get_instance().render(m_window); // remove
 
             m_window.display();
         }

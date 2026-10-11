@@ -511,7 +511,7 @@ namespace me {
             title_bounds.size.x + 5.f,
             title_bounds.size.y / 2.f
         });
-        fps_text->setString(std::to_string(static_cast<int>(MainLoop::get_fps())) + " fps");
+        //fps_text->setString(std::to_string(static_cast<int>(MainLoop::get_fps())) + " fps");
 
         input_rect.setFillColor(foreground_color);
         input_rect.setOutlineThickness(theme_outline_thickness);

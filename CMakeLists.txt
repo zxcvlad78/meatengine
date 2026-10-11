@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.20)
+cmake_minimum_required(VERSION 3.24)
 
 set(PROJECT_NAME godlike)
 project(${PROJECT_NAME} VERSION 0.0.1 LANGUAGES C CXX)
@@ -21,9 +21,8 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE 
-    meatengine::meatengine
+    "$<LINK_LIBRARY:WHOLE_ARCHIVE,meatengine::meatengine>"
 )
-
 
 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:${PROJECT_NAME}>"

@@ -2,6 +2,9 @@
 #include "meatengine/lua_bindings/common.hpp"
 #include "meatengine/meatengine.hpp"
 
+#include "meatengine/cmp/Sprite.hpp"
+#include "meatengine/cmp/SpriteAnimation.hpp"
+
 #include <entt/entt.hpp>
 #include <stdexcept>
 #include <string>
@@ -63,11 +66,6 @@ void init_common(sol::state& lua) {
             return me::MainLoop::get_registry();
         });
     
-    ml_table.set_function("get_fps",
-        []() -> float {
-            return me::MainLoop::get_fps();
-        });
-    
     ml_table.set_function("get_window_title",
         []() -> std::string {
             return me::MainLoop::get_window_title();
@@ -107,37 +105,37 @@ void init_common(sol::state& lua) {
             return me::PackedEntity::exists(id);
         });
 
-    auto sprite_ut = lua.new_usertype<me::Sprite>("Sprite",
-        sol::constructors<me::Sprite()>(),
+    auto sprite_ut = lua.new_usertype<me::cmp::Sprite>("Sprite",
+        sol::constructors<me::cmp::Sprite()>(),
 
         "texture", sol::property(
-            [](me::Sprite& sp) -> me::Texture* { return sp.texture_ptr(); },
-            [](me::Sprite& sp, me::Texture& t) { sp.set_texture(t); }
+            [](me::cmp::Sprite& sp) -> me::Texture* { return sp.texture_ptr(); },
+            [](me::cmp::Sprite& sp, me::Texture& t) { sp.set_texture(t); }
         ),
 
-        "offset", &me::Sprite::offset,
-        "center", &me::Sprite::center,
+        "offset", &me::cmp::Sprite::offset,
+        "center", &me::cmp::Sprite::center,
 
-        "has_texture", &me::Sprite::has_texture,
-        "has_sprite",  &me::Sprite::has_sprite,
-        "clear_texture", &me::Sprite::clear_texture,
+        "has_texture", &me::cmp::Sprite::has_texture,
+        "has_sprite",  &me::cmp::Sprite::has_sprite,
+        "clear_texture", &me::cmp::Sprite::clear_texture,
 
         "sf_sprite", sol::property(
-            [](me::Sprite& sp) -> sf::Sprite* { return sp.sprite_ptr(); },
-            [](me::Sprite&, sol::object) {
+            [](me::cmp::Sprite& sp) -> sf::Sprite* { return sp.sprite_ptr(); },
+            [](me::cmp::Sprite&, sol::object) {
                 throw std::runtime_error("sf_sprite is read-only");
             }
         )
     );
 
-    auto sprite_animation_ut = lua.new_usertype<me::SpriteAnimation>("SpriteAnimation",
-        sol::constructors<me::SpriteAnimation()>(),
+    auto sprite_animation_ut = lua.new_usertype<me::cmp::SpriteAnimation>("SpriteAnimation",
+        sol::constructors<me::cmp::SpriteAnimation()>(),
 
         "spritesheet", sol::property(
-            [](me::SpriteAnimation& sa) -> me::SpriteSheet* {
+            [](me::cmp::SpriteAnimation& sa) -> me::SpriteSheet* {
                 return sa.spritesheet ? sa.spritesheet.operator->() : nullptr;
             },
-            [](me::SpriteAnimation& sa, me::SpriteSheet& sheet) {
+            [](me::cmp::SpriteAnimation& sa, me::SpriteSheet& sheet) {
                 auto h = me::ResourceLoader::find_handle(&sheet);
                 if (!h) {
                     throw std::runtime_error(
@@ -148,43 +146,43 @@ void init_common(sol::state& lua) {
             }
         ),
 
-        "is_playing",         &me::SpriteAnimation::is_playing,
-        "current_frame_idx",  &me::SpriteAnimation::current_frame_idx,
-        "time_accumulator",   &me::SpriteAnimation::time_accumulator,
-        "next_anim",          &me::SpriteAnimation::next_anim,
+        "is_playing",         &me::cmp::SpriteAnimation::is_playing,
+        "current_frame_idx",  &me::cmp::SpriteAnimation::current_frame_idx,
+        "time_accumulator",   &me::cmp::SpriteAnimation::time_accumulator,
+        "next_anim",          &me::cmp::SpriteAnimation::next_anim,
 
-        "play", [](me::SpriteAnimation& sa,
+        "play", [](me::cmp::SpriteAnimation& sa,
                 const std::string& name,
                 sol::optional<std::string> next) {
             return sa.play(name, next.value_or(""));
         }
     );
 
-    auto camera_ut = lua.new_usertype<me::Camera>("Camera",
-        sol::constructors<me::Camera()>(),
-        "zoom",   &me::Camera::zoom,
-        "smooth", &me::Camera::smooth
+    auto camera_ut = lua.new_usertype<me::cmp::Camera>("Camera",
+        sol::constructors<me::cmp::Camera()>(),
+        "zoom", &me::cmp::Camera::zoom,
+        "smooth", &me::cmp::Camera::smooth
     );
 
-    camera_ut.set_function("is_current",   &me::Camera::is_current);
-    camera_ut.set_function("set_current",  &me::Camera::set_current);
-    camera_ut.set_function("make_current", &me::Camera::make_current);
-    camera_ut.set_function("get_current",  &me::Camera::get_current);
+    camera_ut.set_function("is_current", &me::cmp::Camera::is_current);
+    camera_ut.set_function("set_current", &me::cmp::Camera::set_current);
+    camera_ut.set_function("make_current", &me::cmp::Camera::make_current);
+    camera_ut.set_function("get_current", &me::cmp::Camera::get_current);
 
-    auto tilemap_ut = lua.new_usertype<me::TileMap>("TileMap",
-        sol::constructors<me::TileMap()>(),
-        "origin_x", &me::TileMap::origin_x,
-        "origin_y", &me::TileMap::origin_y,
-        "width",    &me::TileMap::width,
-        "height",   &me::TileMap::height,
-        "dirty",    &me::TileMap::dirty,
-        "tiles",    &me::TileMap::tiles,
+    auto tilemap_ut = lua.new_usertype<me::cmp::TileMap>("TileMap",
+        sol::constructors<me::cmp::TileMap()>(),
+        "origin_x", &me::cmp::TileMap::origin_x,
+        "origin_y", &me::cmp::TileMap::origin_y,
+        "width",    &me::cmp::TileMap::width,
+        "height",   &me::cmp::TileMap::height,
+        "dirty",    &me::cmp::TileMap::dirty,
+        "tiles",    &me::cmp::TileMap::tiles,
         "tileset", sol::property(
-            [](me::TileMap& tm) -> me::TileSet* {
+            [](me::cmp::TileMap& tm) -> me::TileSet* {
                 auto h = tm.tileset.handle();
                 return h ? h.get() : nullptr;
             },
-            [](me::TileMap& tm, me::TileSet& ts) {
+            [](me::cmp::TileMap& tm, me::TileSet& ts) {
                 auto sp = me::ResourceLoader::find_handle(&ts);
                 if (!sp) {
                     throw std::runtime_error(
@@ -197,35 +195,35 @@ void init_common(sol::state& lua) {
         )
     );
 
-    tilemap_ut.set_function("load_tiles", &me::TileMap::load_tiles);
-    tilemap_ut.set_function("set_tile",   &me::TileMap::set_tile);
-    tilemap_ut.set_function("get_tile",   &me::TileMap::get_tile);
+    tilemap_ut.set_function("load_tiles", &me::cmp::TileMap::load_tiles);
+    tilemap_ut.set_function("set_tile", &me::cmp::TileMap::set_tile);
+    tilemap_ut.set_function("get_tile", &me::cmp::TileMap::get_tile);
 
-    lua.new_usertype<me::Transform>("Transform",
-        sol::constructors<me::Transform()>(),
-        "position", &me::Transform::position,
-        "rotation", &me::Transform::rotation,
-        "scale",    &me::Transform::scale
+    lua.new_usertype<me::cmp::Transform>("Transform",
+        sol::constructors<me::cmp::Transform()>(),
+        "position", &me::cmp::Transform::position,
+        "rotation", &me::cmp::Transform::rotation,
+        "scale", &me::cmp::Transform::scale
     );
 
-    lua.new_usertype<me::Velocity>("Velocity",
-        sol::constructors<me::Velocity()>(),
-        "linear",  &me::Velocity::linear,
-        "angular", &me::Velocity::angular
+    lua.new_usertype<me::cmp::Velocity>("Velocity",
+        sol::constructors<me::cmp::Velocity()>(),
+        "linear", &me::cmp::Velocity::linear,
+        "angular", &me::cmp::Velocity::angular
     );
 
-    lua.new_usertype<me::ui::FillRect>("FillRect",
-        sol::constructors<me::ui::FillRect()>(),
-        "foreground", &me::ui::FillRect::foreground,
-        "dirty",      &me::ui::FillRect::dirty,
-        "shape",      &me::ui::FillRect::shape,
+    lua.new_usertype<me::cmp::ui::FillRect>("FillRect",
+        sol::constructors<me::cmp::ui::FillRect()>(),
+        "foreground", &me::cmp::ui::FillRect::foreground,
+        "dirty", &me::cmp::ui::FillRect::dirty,
+        "shape", &me::cmp::ui::FillRect::shape,
 
         "stylebox", sol::property(
-            [](me::ui::FillRect& fr) -> me::StyleBox* {
+            [](me::cmp::ui::FillRect& fr) -> me::StyleBox* {
                 auto h = fr.stylebox.handle();
                 return h ? h.get() : nullptr;
             },
-            [](me::ui::FillRect& fr, me::StyleBox& sb) {
+            [](me::cmp::ui::FillRect& fr, me::StyleBox& sb) {
                 auto sp = me::ResourceLoader::find_handle(&sb);
                 if (!sp) {
                     throw std::runtime_error(
@@ -239,26 +237,26 @@ void init_common(sol::state& lua) {
         )
     );
 
-    lua.new_usertype<me::ui::Interactable>("Interactable",
-        sol::constructors<me::ui::Interactable()>()
+    lua.new_usertype<me::cmp::ui::Interactable>("Interactable",
+        sol::constructors<me::cmp::ui::Interactable()>()
     );
 
-    lua.new_usertype<me::ui::Label>("Label",
+    lua.new_usertype<me::cmp::ui::Label>("Label",
         "text", sol::property(
-            [](me::ui::Label& l) -> std::string {
+            [](me::cmp::ui::Label& l) -> std::string {
                 return l.text->getString().toAnsiString();
             },
-            [](me::ui::Label& l, const std::string& s) {
+            [](me::cmp::ui::Label& l, const std::string& s) {
                 l.text->setString(sf::String::fromUtf8(s.begin(), s.end()));
                 l.dirty = true;
             }
         ),
         "font", sol::property(
-            [](me::ui::Label& l) -> me::Font* {
+            [](me::cmp::ui::Label& l) -> me::Font* {
                 auto h = l.get_font().handle();
                 return h ? h.get() : nullptr;
             },
-            [](me::ui::Label& l, me::Font& f) {
+            [](me::cmp::ui::Label& l, me::Font& f) {
                 auto fh = me::ResourceLoader::find_handle(&f);
                 if (!fh) {
                     throw std::runtime_error(
@@ -270,35 +268,35 @@ void init_common(sol::state& lua) {
             }
         ),
         "character_size", sol::property(
-            [](me::ui::Label& l) { return l.text->getCharacterSize(); },
-            [](me::ui::Label& l, unsigned int s) { l.text->setCharacterSize(s); }
+            [](me::cmp::ui::Label& l) { return l.text->getCharacterSize(); },
+            [](me::cmp::ui::Label& l, unsigned int s) { l.text->setCharacterSize(s); }
         ),
         "color", sol::property(
-            [](me::ui::Label& l) { return l.text->getFillColor(); },
-            [](me::ui::Label& l, sf::Color c) { l.text->setFillColor(c); }
+            [](me::cmp::ui::Label& l) { return l.text->getFillColor(); },
+            [](me::cmp::ui::Label& l, sf::Color c) { l.text->setFillColor(c); }
         ),
         "position", sol::property(
-            [](me::ui::Label& l) { return l.text->getPosition(); },
-            [](me::ui::Label& l, sf::Vector2f p) { l.text->setPosition(p); }
+            [](me::cmp::ui::Label& l) { return l.text->getPosition(); },
+            [](me::cmp::ui::Label& l, sf::Vector2f p) { l.text->setPosition(p); }
         ),
-        "dirty", &me::ui::Label::dirty
+        "dirty", &me::cmp::ui::Label::dirty
     );
 
-    lua.new_usertype<me::ZIndex>("ZIndex",
-        sol::constructors<me::ZIndex()>(),
-        "value", &me::ZIndex::value
+    lua.new_usertype<me::cmp::ZIndex>("ZIndex",
+        sol::constructors<me::cmp::ZIndex()>(),
+        "value", &me::cmp::ZIndex::value
     );
 
-    register_component<me::Transform>("Transform", lua);
-    register_component<me::ZIndex>("ZIndex", lua);
-    register_component<me::Velocity>("Velocity", lua);
-    register_component<me::TileMap>("TileMap", lua);
-    register_component<me::Camera>("Camera", lua);
-    register_component<me::Sprite>("Sprite", lua);
-    register_component<me::SpriteAnimation>("SpriteAnimation", lua);
-    register_component<me::ui::FillRect>("FillRect", lua);
-    register_component<me::ui::Label>("Label", lua);
-    register_component<me::ui::Interactable>("Interactable", lua);
+    register_component<me::cmp::Transform>("Transform", lua);
+    register_component<me::cmp::ZIndex>("ZIndex", lua);
+    register_component<me::cmp::Velocity>("Velocity", lua);
+    register_component<me::cmp::TileMap>("TileMap", lua);
+    register_component<me::cmp::Camera>("Camera", lua);
+    register_component<me::cmp::Sprite>("Sprite", lua);
+    register_component<me::cmp::SpriteAnimation>("SpriteAnimation", lua);
+    register_component<me::cmp::ui::FillRect>("FillRect", lua);
+    register_component<me::cmp::ui::Label>("Label", lua);
+    register_component<me::cmp::ui::Interactable>("Interactable", lua);
 }
 
 } // namespace me::lua_bindings
