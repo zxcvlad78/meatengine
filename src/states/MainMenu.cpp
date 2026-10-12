@@ -41,6 +41,9 @@ namespace godlike {
             registry.get<me::cmp::ui::Interactable>(play_btn).on_pressed = [this](entt::registry& r) {
                 me::ScriptedStateRegistry::change_to("core:world");
             };
+            registry.get<me::cmp::ui::Interactable>(mods_btn).on_pressed = [this](entt::registry& r) {
+                me::GameStateRegistry::change_to("godlike:mod_list");
+            };
         }
 
         void MainMenu::handle_event(sf::RenderWindow& window, entt::registry& registry, const sf::Event& event)  {
@@ -51,6 +54,7 @@ namespace godlike {
             // game state exit)00
         }
     }
+}
 
 static void update()  {
     auto& reg = me::MainLoop::get_registry();
@@ -88,12 +92,10 @@ static void update()  {
 }
 
 
-}
-
-ME_REGISTER_GAME_STATE("main_menu", godlike::states::MainMenu)
+ME_REGISTER_GAME_STATE("godlike:main_menu", godlike::states::MainMenu)
 ME_REGISTER_SYSTEM(
     "godlike:states:main_menu:update",
     me::SystemPhase::Update,
     0,
-    godlike::update
+    update
 )

@@ -1,5 +1,11 @@
 #pragma once
-#include <godlike/components/Common.hpp>
+#include <godlike/cmp/EnergyConsumer.hpp>
+#include <godlike/cmp/EnergyProducer.hpp>
+#include <godlike/cmp/EnergyStorage.hpp>
+#include <godlike/cmp/ItemContainer.hpp>
+#include <godlike/cmp/MoveSpeed.hpp>
+#include <godlike/cmp/PlayerInput.hpp>
+#include <godlike/cmp/Satisfaction.hpp>
 #include <godlike/ItemDefinition.hpp>
 #include <godlike/ItemStack.hpp>
 #include <godlike/ItemRegistry.hpp>

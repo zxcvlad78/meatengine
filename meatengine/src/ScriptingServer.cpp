@@ -1,5 +1,5 @@
 #include <meatengine/ScriptingServer.hpp>
-#include <meatengine/lua_bindings/common.hpp>
+#include <meatengine/lua/LuaBinder.hpp>
 
 #include <iostream>
 
@@ -21,7 +21,7 @@ namespace me {
             sol::lib::math
         );
 
-        lua_bindings::init(lua);
+        lua::bind(lua);
     }
 
     bool ScriptingServer::run_file(std::string_view path) {

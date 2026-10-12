@@ -15,21 +15,21 @@ enum class SystemPhase : uint8_t {
 
 inline const char* to_string(SystemPhase p) {
     switch (p) {
-        case SystemPhase::Input: return "input";
-        case SystemPhase::FixedUpdate: return "fixed_update";
-        case SystemPhase::Update: return "update";
-        case SystemPhase::Render: return "render";
-        case SystemPhase::PostRender: return "post_render";
-        default: return "invalid";
+        case SystemPhase::Input: return "Input";
+        case SystemPhase::FixedUpdate: return "FixedUpdate";
+        case SystemPhase::Update: return "Update";
+        case SystemPhase::Render: return "Render";
+        case SystemPhase::PostRender: return "PostRender";
+        default: return "Invalid";
     }
 }
 
 inline SystemPhase from_string(std::string_view s) {
-    if (s == "input") return SystemPhase::Input;
-    if (s == "fixed_update") return SystemPhase::FixedUpdate;
-    if (s == "update") return SystemPhase::Update;
-    if (s == "render") return SystemPhase::Render;
-    if (s == "post_render") return SystemPhase::PostRender;
+    if (s == "Input") return SystemPhase::Input;
+    if (s == "FixedUpdate") return SystemPhase::FixedUpdate;
+    if (s == "Update") return SystemPhase::Update;
+    if (s == "Render") return SystemPhase::Render;
+    if (s == "PostRender") return SystemPhase::PostRender;
     return SystemPhase::Invalid;
 }
 

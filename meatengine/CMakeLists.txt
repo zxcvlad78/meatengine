@@ -27,11 +27,12 @@ target_link_libraries(sol2 INTERFACE Lua::Lua)
 file(GLOB_RECURSE MEATENGINE_SOURCES CONFIGURE_DEPENDS "src/*.cpp")
 file(GLOB_RECURSE MEATENGINE_HEADERS CONFIGURE_DEPENDS "include/*.hpp")
 
-set_source_files_properties(
-    src/lua_bindings/common.cpp
-    src/lua_bindings/resources.cpp
-    PROPERTIES COMPILE_OPTIONS "/bigobj"
-)
+#set_source_files_properties(
+#    src/lua_bindings/common.cpp
+#    src/lua_bindings/resources.cpp
+#    src/lua_bindings/sfml.cpp
+#    PROPERTIES COMPILE_OPTIONS "/bigobj"
+#)
 
 add_library(meatengine ${MEATENGINE_SOURCES} ${MEATENGINE_HEADERS})
 add_library(meatengine::meatengine ALIAS meatengine)

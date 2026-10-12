@@ -107,6 +107,20 @@ void SystemRegistry::ensure_sorted(SystemPhase phase) {
     b.sorted = true;
 }
 
+void SystemRegistry::clear() {
+    for (auto& b : _buckets) {
+        b.entries.clear();
+        b.sorted = true;
+    }
+}
+
+void SystemRegistry::clear(SystemPhase phase) {
+    if (phase == SystemPhase::Invalid) return;
+    auto& b = bucket(phase);
+    b.entries.clear();
+    b.sorted = true;
+}
+
 void SystemRegistry::run(SystemPhase phase) {
     if (phase == SystemPhase::Invalid) return;
 

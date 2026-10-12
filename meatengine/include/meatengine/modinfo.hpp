@@ -5,12 +5,12 @@
 #include <charconv>
 #include <stdexcept>
 
-namespace me::modinfo {
-    struct Version {
+namespace me {
+    struct ModVersion {
         uint32_t major = 0; uint32_t minor = 0; uint32_t patch = 0;
 
-        static Version parse(const std::string& s) {
-            Version v;
+        static ModVersion parse(const std::string& s) {
+            ModVersion v;
             uint32_t parts[3] = {0, 0, 0};
             int idx = 0;
 
@@ -23,7 +23,7 @@ namespace me::modinfo {
                 if (!tok.empty()) {
                     auto [p, ec] = std::from_chars(tok.data(), tok.data() + tok.size(), val);
                     if (ec != std::errc{} || p != tok.data() + tok.size())
-                        throw std::runtime_error("[ModLoader] bad version component '" + tok + "' in '" + s + "'");
+                        throw std::runtime_error("[ModInfo] bad version component '" + tok + "' in '" + s + "'");
                 }
                 parts[idx++] = val;
                 if (dot == std::string::npos) break;
@@ -40,44 +40,44 @@ namespace me::modinfo {
             return std::to_string(major) + "." + std::to_string(minor) + "." + std::to_string(patch);
         }
 
-        bool operator<(const Version& o) const noexcept {
+        bool operator<(const ModVersion& o) const noexcept {
             if (major != o.major) return major < o.major;
             if (minor != o.minor) return minor < o.minor;
             return patch < o.patch;
         }
 
-        bool operator==(const Version& o) const noexcept {
+        bool operator==(const ModVersion& o) const noexcept {
             return major == o.major && minor == o.minor && patch == o.patch;
         }
 
-        bool operator>=(const Version& o) const noexcept { return !(*this < o); }
-        bool operator<=(const Version& o) const noexcept { return *this < o || *this == o; }
+        bool operator>=(const ModVersion& o) const noexcept { return !(*this < o); }
+        bool operator<=(const ModVersion& o) const noexcept { return *this < o || *this == o; }
     };
 
-    enum class DependencyType { Required, Optional, Conflict, LoadBefore };
+    enum class ModDependencyType { Required, Optional, Conflict, LoadBefore };
 
-    struct Dependency {
-        DependencyType type = DependencyType::Required;
+    struct ModDependency {
+        ModDependencyType type = ModDependencyType::Required;
         std::string name;
         bool has_version = false;
         std::string op;
-        Version version;
+        ModVersion version;
 
-        static Dependency parse(const std::string& s) {
-            Dependency d;
+        static ModDependency parse(const std::string& s) {
+            ModDependency d;
 
             std::size_t pos = s.find_first_not_of(" \t");
             if (pos == std::string::npos)
-                throw std::runtime_error("[ModLoader] empty dependency string");
+                throw std::runtime_error("[ModInfo] empty dependency string");
 
             char c = s[pos];
-            if (c == '?') { d.type = DependencyType::Optional; ++pos; }
-            else if (c == '!') { d.type = DependencyType::Conflict; ++pos; }
-            else if (c == '~') { d.type = DependencyType::LoadBefore; ++pos; }
+            if (c == '?') { d.type = ModDependencyType::Optional; ++pos; }
+            else if (c == '!') { d.type = ModDependencyType::Conflict; ++pos; }
+            else if (c == '~') { d.type = ModDependencyType::LoadBefore; ++pos; }
 
             pos = s.find_first_not_of(" \t", pos);
             if (pos == std::string::npos)
-                throw std::runtime_error("[ModLoader] malformed dependency '" + s + "'");
+                throw std::runtime_error("[ModInfo] malformed dependency '" + s + "'");
 
             std::size_t nameEnd = s.find_first_of(" \t", pos);
             if (nameEnd == std::string::npos) {
@@ -93,7 +93,7 @@ namespace me::modinfo {
             std::size_t sp = tail.find_first_of(" \t");
             if (sp == std::string::npos) {
                 d.op = "==";
-                d.version = Version::parse(tail);
+                d.version = ModVersion::parse(tail);
                 d.has_version = true;
                 return d;
             }
@@ -101,9 +101,9 @@ namespace me::modinfo {
             d.op = tail.substr(0, sp);
             std::size_t vs = tail.find_first_not_of(" \t", sp);
             if (vs == std::string::npos)
-                throw std::runtime_error("[ModLoader] missing version in '" + s + "'");
+                throw std::runtime_error("[ModInfo] missing version in '" + s + "'");
 
-            d.version = Version::parse(tail.substr(vs));
+            d.version = ModVersion::parse(tail.substr(vs));
             d.has_version = true;
             return d;
         }
@@ -111,8 +111,8 @@ namespace me::modinfo {
 
     struct ModInfo {
         std::string name;
-        Version version;
+        ModVersion version;
         std::string path; // abs path
-        std::vector<Dependency> dependencies;
+        std::vector<ModDependency> dependencies;
     };
 };

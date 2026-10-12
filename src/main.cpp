@@ -2,24 +2,18 @@
 
 #include <meatengine/meatengine.hpp>
 #include <meatengine/SystemRegistry.hpp>
-#include <godlike/lua_bindings/common.hpp>
 #include <godlike/states/MainMenu.hpp>
+#include <godlike/states/ModList.hpp>
 
 int main() {
-	// init lua bindings first!!!
 	me::MainLoop::init("GodLike");
- 	godlike::lua_bindings::init(me::ScriptingServer::lua());
-	me::ModLoader::init_dir("data");
+	me::ModLoader::init();
 
 	auto main_font = me::ResourceLoader::load<me::Font>("data/core/res/fonts/mainfont.ttf");
 	me::ResourceLoader::set_default<me::Font>(main_font);
 	
 	auto main_stylebox = me::ResourceLoader::load<me::StyleBox>("data/core/res/styleboxes/default.json");
 	me::ResourceLoader::set_default<me::StyleBox>(main_stylebox);
-
-	for (auto& id : me::SystemRegistry::list()) {
-    std::cout << "system: " << id << "\n";
-}
 
 	me::MainLoop::run(std::make_unique<godlike::states::MainMenu>());
 

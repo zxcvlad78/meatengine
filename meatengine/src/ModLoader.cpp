@@ -15,7 +15,7 @@ using json = nlohmann::json;
 namespace me {
 
 namespace {
-    bool version_satisfies(const modinfo::Version& v, const std::string& op, const modinfo::Version& want) {
+    bool version_satisfies(const ModVersion& v, const std::string& op, const ModVersion& want) {
         if (op == "==") return v == want;
         if (op == ">=") return !(v < want);
         if (op == "<=") return v < want || v == want;
@@ -25,11 +25,11 @@ namespace {
     }
 }
 
-bool ModLoader::init_dir(const std::string& path) {
+bool ModLoader::init(const std::string& path) {
     if (!fs::exists(path) || !fs::is_directory(path))
         return false;
 
-    std::vector<modinfo::ModInfo> mods;
+    std::vector<ModInfo> mods;
     try {
         mods = scan_mods(path);
     } catch (const std::exception&) {
@@ -49,15 +49,15 @@ bool ModLoader::init_dir(const std::string& path) {
     return true;
 }
 
-std::vector<modinfo::ModInfo> ModLoader::scan_mods(const std::string& path) {
-    std::vector<modinfo::ModInfo> result;
+std::vector<ModInfo> ModLoader::scan_mods(const std::string& path) {
+    std::vector<ModInfo> result;
 
     std::error_code ec;
     for (const auto& entry : fs::directory_iterator(path, ec)) {
         if (ec) break;
         if (!entry.is_directory()) continue;
 
-        modinfo::ModInfo info;
+        ModInfo info;
         info.path = entry.path().string();
         if (!read_mod_info(info.path, info))
             continue;
@@ -68,12 +68,12 @@ std::vector<modinfo::ModInfo> ModLoader::scan_mods(const std::string& path) {
     std::sort(
         result.begin(),
         result.end(),
-        [](const modinfo::ModInfo& a, const modinfo::ModInfo& b) { return a.name < b.name; }
+        [](const ModInfo& a, const ModInfo& b) { return a.name < b.name; }
     );
     return result;
 }
 
-bool ModLoader::read_mod_info(const std::string& path, modinfo::ModInfo& out) {
+bool ModLoader::read_mod_info(const std::string& path, ModInfo& out) {
     fs::path infoPath = fs::path(path) / "modinfo.lua";
     if (!fs::exists(infoPath)) return false;
 
@@ -91,7 +91,7 @@ bool ModLoader::read_mod_info(const std::string& path, modinfo::ModInfo& out) {
 
     std::string ver = t.get_or("version", std::string{"0.0.0"});
     try {
-        out.version = modinfo::Version::parse(ver);
+        out.version = ModVersion::parse(ver);
     } catch (...) {
         return false;
     }
@@ -102,14 +102,14 @@ bool ModLoader::read_mod_info(const std::string& path, modinfo::ModInfo& out) {
         for (auto&& [_, v] : deps) {
             if (!v.is<std::string>()) continue;
             try {
-                out.dependencies.push_back(modinfo::Dependency::parse(v.as<std::string>()));
+                out.dependencies.push_back(ModDependency::parse(v.as<std::string>()));
             } catch (...) { }
         }
     }
     return true;
 }
 
-std::vector<std::size_t> ModLoader::resolve_order(const std::vector<modinfo::ModInfo>& mods) {
+std::vector<std::size_t> ModLoader::resolve_order(const std::vector<ModInfo>& mods) {
     const std::size_t n = mods.size();
 
     std::unordered_map<std::string, std::size_t> byName;
@@ -128,13 +128,13 @@ std::vector<std::size_t> ModLoader::resolve_order(const std::vector<modinfo::Mod
             std::size_t j = present ? it->second : 0;
 
             switch (dep.type) {
-                case modinfo::DependencyType::Conflict:
+                case ModDependencyType::Conflict:
                     if (present)
                         throw std::runtime_error(
                             "[ModLoader] '" + mods[i].name + "' conflicts with '" + dep.name + "'");
                     break;
 
-                case modinfo::DependencyType::Required:
+                case ModDependencyType::Required:
                     if (!present)
                         throw std::runtime_error(
                             "[ModLoader] '" + mods[i].name + "' requires missing mod '" + dep.name + "'");
@@ -147,14 +147,14 @@ std::vector<std::size_t> ModLoader::resolve_order(const std::vector<modinfo::Mod
                     ++indegree[i];
                     break;
 
-                case modinfo::DependencyType::Optional:
+                case ModDependencyType::Optional:
                     if (present) {
                         edges[j].push_back(i);
                         ++indegree[i];
                     }
                     break;
 
-                case modinfo::DependencyType::LoadBefore:
+                case ModDependencyType::LoadBefore:
                     if (present) {
                         edges[i].push_back(j);
                         ++indegree[j];
@@ -197,7 +197,7 @@ std::vector<std::size_t> ModLoader::resolve_order(const std::vector<modinfo::Mod
     return order;
 }
 
-bool ModLoader::load_mod(const modinfo::ModInfo& mod) {
+bool ModLoader::load_mod(const ModInfo& mod) {
     fs::path init_path = fs::path(mod.path) / "init.lua";
     if (!fs::exists(init_path)) return false;
 
@@ -206,10 +206,21 @@ bool ModLoader::load_mod(const modinfo::ModInfo& mod) {
     lua["MOD_NAME"] = mod.name;
     lua["MOD_PATH"] = mod.path;
 
-    ScriptingServer::run_file(init_path.string());
+    bool error = ScriptingServer::run_file(init_path.string());
+
+    lua["MOD_NAME"] = "";
+    lua["MOD_PATH"] = "";
+
+    if (!error) {
+        std::cout << "[ModLoader] failed to load '" << mod.name << "'" << std::endl;
+        return false;
+    }
 
     std::cout << "[ModLoader] successfully loaded '" << mod.name << "'" << std::endl;
+    _loaded.push_back(mod);
     return true;
 }
+
+std::vector<ModInfo> ModLoader::list() { return _loaded; }
 
 };
