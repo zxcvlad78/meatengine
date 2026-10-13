@@ -1,66 +1,98 @@
 #pragma once
 
 #include <optional>
-#include <meatengine/cmp/ui/States.hpp>
-#include <meatengine/Resources.hpp>
-#include <meatengine/ResourceLoader.hpp>
+#include <SFML/Graphics/Text.hpp>
+
+#include <entt/resource/resource.hpp>
 #include <entt/entity/registry.hpp>
 #include <entt/entity/entity.hpp>
 
-namespace me::cmp::ui {
-	struct Label {
-	private:
-		entt::resource<me::Font> _font{};
-	public:
-        bool dirty = true;
-		std::optional<sf::Text> text;
-        entt::resource<me::StyleBox> stylebox;
+#include <meatengine/Resources.hpp>
+#include <meatengine/ResourceLoader.hpp>
+#include <meatengine/cmp/ui/States.hpp>
 
-		entt::resource<me::Font> get_font() { return _font; }
+namespace me::cmp::ui {
+
+    struct Label {
+    private:
+        entt::resource<me::Font> _font{};
+
+        // Совмещает origin sf::Text с левым-верхним углом видимых глифов.
+        // Без этого b.position из getLocalBounds() смещает текст при
+        // align_self=Center и в обычном layout.
+        void sync_origin() {
+            if (!text) return;
+            text->setOrigin(text->getLocalBounds().position);
+        }
+
+    public:
+        std::optional<sf::Text> text;
+        bool dirty = true;
+
+        entt::resource<me::Font> get_font() const { return _font; }
+
         void set_font(entt::resource<me::Font> font) {
             if (!font) {
                 _font = {};
                 text.reset();
+                dirty = true;
                 return;
             }
             _font = std::move(font);
             text.emplace(_font->res);
-			dirty = true;
+            sync_origin();
+            dirty = true;
         }
 
         void set_font(me::Font& font) {
             auto h = me::ResourceLoader::find_handle(&font);
             if (!h) {
-                throw std::runtime_error("Label::set_font: Font not from ResourceLoader");
+                throw std::runtime_error(
+                    "Label::set_font: Font not from ResourceLoader"
+                );
             }
             set_font(entt::resource<me::Font>{h});
         }
 
+        bool has_text() const noexcept { return text.has_value(); }
 
-		void update_fill(entt::registry& reg, entt::entity e) {
-            if (!dirty) return;
-            if (!stylebox) return;
-			dirty = false;			
-            
-			if (!text.has_value()) return;
+        sf::Text* text_ptr() noexcept { return text ? &*text : nullptr; }
+        const sf::Text* text_ptr() const noexcept { return text ? &*text : nullptr; }
 
-            if (reg.all_of<Disabled>(e))
-                text->setFillColor(stylebox->get_value<sf::Color>("font_disabled_color", sf::Color::White));
-            else if (reg.all_of<Pressed>(e))
-                text->setFillColor(stylebox->get_value<sf::Color>("font_pressed_color", sf::Color::White));
-            else if (reg.all_of<Hovered>(e))
-                text->setFillColor(stylebox->get_value<sf::Color>("font_hovered_color", sf::Color::White));
-            else 
-                text->setFillColor(stylebox->get_value<sf::Color>("font_color", sf::Color::White));
-		}
-
-		Label() = default; 
-		Label(me::Font& font) : text(font.res) {
-            if (!stylebox) {
-                std::shared_ptr<me::StyleBox> def = ResourceLoader::get_default<me::StyleBox>();
-                if (def != nullptr)
-                    stylebox = entt::resource<me::StyleBox>{def};
-            }
+        void set_string(const std::string& s) {
+            if (!text) return;
+            text->setString(sf::String::fromUtf8(s.begin(), s.end()));
+            sync_origin();
+            dirty = true;
         }
-	};
+
+        void set_character_size(unsigned int size) {
+            if (!text) return;
+            text->setCharacterSize(size);
+            sync_origin();
+            dirty = true;
+        }
+
+        void set_color(sf::Color c) {
+            if (!text) return;
+            text->setFillColor(c);
+            dirty = true;
+        }
+
+        void set_position(sf::Vector2f p) {
+            if (!text) return;
+            text->setPosition(p);
+        }
+
+        Label() = default;
+
+        explicit Label(entt::resource<me::Font> font) {
+            set_font(std::move(font));
+        }
+
+        explicit Label(me::Font& font) {
+            set_font(font);
+        }
+    };
+
 }

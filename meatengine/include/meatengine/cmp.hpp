@@ -1,9 +1,12 @@
 #pragma once
 #include <meatengine/cmp/Camera.hpp>
-#include <meatengine/cmp/ChildOf.hpp>
+#include <meatengine/cmp/Children.hpp>
+#include <meatengine/cmp/Depth.hpp>
 #include <meatengine/cmp/FullScreenScale.hpp>
+#include <meatengine/cmp/GlobalBounds.hpp>
+#include <meatengine/cmp/GlobalTransform.hpp>
 #include <meatengine/cmp/Offset.hpp>
-#include <meatengine/cmp/ParentOf.hpp>
+#include <meatengine/cmp/Parent.hpp>
 #include <meatengine/cmp/Sprite.hpp>
 #include <meatengine/cmp/SpriteAnimation.hpp>
 #include <meatengine/cmp/TileMap.hpp>
@@ -11,13 +14,25 @@
 #include <meatengine/cmp/Transform.hpp>
 #include <meatengine/cmp/Velocity.hpp>
 #include <meatengine/cmp/ZIndex.hpp>
-//ui
+
+#include <meatengine/cmp/ui/BackgroundColor.hpp>
+#include <meatengine/cmp/ui/BorderColor.hpp>
+#include <meatengine/cmp/ui/BorderRadius.hpp>
+#include <meatengine/cmp/ui/BorderWidth.hpp>
+#include <meatengine/cmp/ui/ComputedNode.hpp>
 #include <meatengine/cmp/ui/Container.hpp>
 #include <meatengine/cmp/ui/FillRect.hpp>
-#include <meatengine/cmp/ui/Interactable.hpp>
+#include <meatengine/cmp/ui/FlexStyle.hpp>
+#include <meatengine/cmp/ui/FocusPolicy.hpp>
+#include <meatengine/cmp/ui/Focusable.hpp>
+#include <meatengine/cmp/GlobalZIndex.hpp>
+#include <meatengine/cmp/ui/Interaction.hpp>
 #include <meatengine/cmp/ui/Label.hpp>
-#include <meatengine/cmp/ui/Layout.hpp>
-#include <meatengine/cmp/ui/LayoutMode.hpp>
-#include <meatengine/cmp/ui/Padding.hpp>
+#include <meatengine/cmp/ui/Node.hpp>
+#include <meatengine/cmp/ui/OnEvent.hpp>
+#include <meatengine/cmp/ui/StackIndex.hpp>
 #include <meatengine/cmp/ui/States.hpp>
 #include <meatengine/cmp/ui/UIRoot.hpp>
+#include <meatengine/cmp/ui/UiRect.hpp>
+#include <meatengine/cmp/ui/Val.hpp> 
+#include <meatengine/cmp/ZIndex.hpp> 

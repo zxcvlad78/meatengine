@@ -41,9 +41,10 @@ private:
         auto res = fn(std::forward<Args>(args)...);
         if (!res.valid()) {
             sol::error err = res;
-            std::cerr << "[ScriptedState] "
-                << _name << "] " << method
-                << " failed: " << err.what() << "\n";
+            std::cerr << "[ScriptedState] " << _name << "] "
+                << method
+                << " failed: "
+                << err.what() << "\n";
             fn = sol::protected_function{};
         }
     }

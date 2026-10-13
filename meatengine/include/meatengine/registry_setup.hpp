@@ -21,7 +21,7 @@ struct SetupAutoReg {
     }
 };
 
-} // namespace me
+} // namespace me::registry_setup
 
 #define ME_REGISTER_REGISTRY_SETUP_IMPL(NAME, FN, CNT) \
     namespace { \

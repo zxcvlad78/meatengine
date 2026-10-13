@@ -12,7 +12,7 @@ static void bind(sol::state& lua) {
 }
 
 ME_LUA_BINDING(
-    "godlike:ItemDefinition",
+    "godlike:ItemStack",
     static_cast<unsigned>(me::lua::BindPriority::BaseType),
     &bind
 )

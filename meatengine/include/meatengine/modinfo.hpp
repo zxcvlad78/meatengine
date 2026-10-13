@@ -79,14 +79,14 @@ namespace me {
             if (pos == std::string::npos)
                 throw std::runtime_error("[ModInfo] malformed dependency '" + s + "'");
 
-            std::size_t nameEnd = s.find_first_of(" \t", pos);
-            if (nameEnd == std::string::npos) {
+            std::size_t name_end = s.find_first_of(" \t", pos);
+            if (name_end == std::string::npos) {
                 d.name = s.substr(pos);
                 return d;
             }
-            d.name = s.substr(pos, nameEnd - pos);
+            d.name = s.substr(pos, name_end - pos);
 
-            std::size_t rest = s.find_first_not_of(" \t", nameEnd);
+            std::size_t rest = s.find_first_not_of(" \t", name_end);
             if (rest == std::string::npos) return d;
 
             std::string tail = s.substr(rest);

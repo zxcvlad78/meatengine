@@ -18,11 +18,6 @@ private:
     struct Entry {
         sol::protected_function on_enter;
         sol::protected_function on_exit;
-        sol::protected_function update;
-        sol::protected_function update_deferred;
-        sol::protected_function render;
-        sol::protected_function render_deferred;
-        sol::protected_function render_default_view;
         sol::protected_function handle_event;
     };
 

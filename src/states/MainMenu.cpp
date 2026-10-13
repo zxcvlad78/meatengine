@@ -1,101 +1,105 @@
 #include <meatengine/SystemRegistry.hpp>
 #include <meatengine/MainLoop.hpp>
+#include <meatengine/hierarchy.hpp>
+#include <meatengine/PackedEntity.hpp>
+
+#include <meatengine/cmp/Transform.hpp>
+#include <meatengine/cmp/Parent.hpp>
+#include <meatengine/cmp/Children.hpp>
+#include <meatengine/cmp/ZIndex.hpp>
+#include <meatengine/cmp/GlobalZIndex.hpp>
+
+#include <meatengine/cmp/ui/UIRoot.hpp>
+#include <meatengine/cmp/ui/Node.hpp>
+#include <meatengine/cmp/ui/FlexStyle.hpp>
+#include <meatengine/cmp/ui/FillRect.hpp>
+#include <meatengine/cmp/ui/Label.hpp>
+#include <meatengine/cmp/ui/BackgroundColor.hpp>
+#include <meatengine/cmp/ui/BorderColor.hpp>
+#include <meatengine/cmp/ui/BorderWidth.hpp>
+#include <meatengine/cmp/ui/Interaction.hpp>
+#include <meatengine/cmp/ui/FocusPolicy.hpp>
+#include <meatengine/cmp/ui/Focusable.hpp>
+#include <meatengine/cmp/ui/OnEvent.hpp>
+
 #include <godlike/states/MainMenu.hpp>
 
-namespace godlike {
+using namespace me;
+using namespace me::cmp;
+using namespace me::cmp::ui;
 
-    namespace states {
-        void MainMenu::on_enter(sf::RenderWindow& window, entt::registry& registry) {
-            {auto e = registry.create();
-                registry.emplace<me::cmp::ZIndex>(e, -1);
-                auto& transform = registry.emplace<me::cmp::Transform>(e);
+namespace godlike::states {
 
-                auto& fr = registry.emplace<me::cmp::ui::FillRect>(e);
-                fr.stylebox = me::ResourceLoader::load<me::StyleBox>("data/core/res/styleboxes/default.json");
-                fr.shape.setSize({400.f, 500.f});
-                fr.foreground = false;
-                registry.emplace<tags::BGFillRect>(e);
+void MainMenu::on_enter(sf::RenderWindow&, entt::registry& r) {
+    auto root = r.create();
+    r.emplace<Transform>(root);
+    r.emplace<Children>(root);
+    r.emplace<UIRoot>(root);
+    r.emplace<Node>(root, Node{
+        .width = Val::Percent(100.f),
+        .height = Val::Percent(100.f),
+    });
+    r.emplace<FlexStyle>(root, FlexStyle{
+        .direction = FlexDirection::Column,
+        .justify = JustifyContent::Center,
+        .align_items = AlignItems::Center,
+    });
+
+    auto bg = PackedEntity::spawn("core:ui:panel", r);
+    if (auto* n = r.try_get<Node>(bg)) {
+        n->width = Val::Percent(100);
+        n->height = Val::Percent(100);
+        n->padding = UiRect::all(Val::Px(24.f));
+    }
+    hierarchy::set_parent(r, bg, root);
+
+    auto title = PackedEntity::spawn("core:ui:title", r);
+    hierarchy::set_parent(r, title, bg);
+
+    auto play_btn = PackedEntity::spawn("core:ui:button", r);
+    hierarchy::set_button_text(r, play_btn, "Play");
+
+    auto mods_btn = PackedEntity::spawn("core:ui:button", r);
+    hierarchy::set_button_text(r, mods_btn, "Mods");
+
+    if (mods_btn == entt::null || play_btn == entt::null) {
+        std::cerr << "[MainMenu] failed to spawn buttons\n";
+        return;
+    }
+
+    hierarchy::set_parent(r, play_btn, bg);
+    hierarchy::set_parent(r, mods_btn, bg);
+
+    for (auto btn : { mods_btn, play_btn }) {
+        if (auto* n = r.try_get<Node>(btn)) {
+            n->width = Val::Percent(25.f);
+            n->height = Val::Px(40.f);
+        }
+        if (auto* fs = r.try_get<FlexStyle>(btn))
+            fs->flex_grow = 0.f;
+    }
+
+    r.emplace<OnEvent>(play_btn).cb =
+        [](entt::registry&, entt::entity, Event& ev) {
+            if (ev.type == EventType::Click) {
+                ScriptedStateRegistry::change_to("core:world");
+                ev.handled = true;
             }
+        };
 
-            auto spawn_btn = [&](const std::string& text) {
-                auto btn = me::PackedEntity::spawn("core:ui:button", registry);
-                registry.emplace<tags::CButton>(btn);
-                
-                auto* fr = registry.try_get<me::cmp::ui::FillRect>(btn);
-                auto* label = registry.try_get<me::cmp::ui::Label>(btn);
-
-                if (fr != nullptr) {
-                    fr->shape.setSize({250.0, 50.f});
-                }
-                if (label != nullptr) {
-                    label->text->setString(text);
-                }
-
-                return btn;
-            };
-            
-            auto mods_btn = spawn_btn("Mods");
-            //auto settings_btn = spawn_btn("Settings");
-            auto play_btn = spawn_btn("Play");
-            
-            registry.get<me::cmp::ui::Interactable>(play_btn).on_pressed = [this](entt::registry& r) {
-                me::ScriptedStateRegistry::change_to("core:world");
-            };
-            registry.get<me::cmp::ui::Interactable>(mods_btn).on_pressed = [this](entt::registry& r) {
-                me::GameStateRegistry::change_to("godlike:mod_list");
-            };
-        }
-
-        void MainMenu::handle_event(sf::RenderWindow& window, entt::registry& registry, const sf::Event& event)  {
-            // handle event))
-        }
-
-        void MainMenu::on_exit(sf::RenderWindow& window, entt::registry& registry)  {
-            // game state exit)00
-        }
-    }
+    r.emplace<OnEvent>(mods_btn).cb =
+        [](entt::registry&, entt::entity, Event& ev) {
+            if (ev.type == EventType::Click) {
+                GameStateRegistry::change_to("godlike:mod_list");
+                ev.handled = true;
+            }
+        };
 }
 
-static void update()  {
-    auto& reg = me::MainLoop::get_registry();
-    auto& window = me::MainLoop::get_window();
-    
-    const sf::Vector2f win_size(window.getSize());
+void MainMenu::handle_event(sf::RenderWindow&, entt::registry&, const sf::Event&) {}
 
-    for (auto [e, fr] : reg.view<me::cmp::ui::FillRect, godlike::states::tags::BGFillRect>().each()) {
-        fr.shape.setSize(win_size);
-    }
+void MainMenu::on_exit(sf::RenderWindow&, entt::registry&) {}
 
-    static constexpr float spacing = 20.f;
-    int items_count = 0;
-    float total_height = 0.f;
-
-    auto button_view = reg.view<me::cmp::Transform, me::cmp::ui::FillRect, godlike::states::tags::CButton>();
-    
-    for (auto [e, t, fr] : button_view.each()) {
-        total_height += fr.shape.getSize().y + spacing;
-        items_count++;
-    }
-    
-    if (items_count > 0) {
-        total_height -= spacing;
-    }
-
-    float current_y = (win_size.y - total_height) / 2.f;
-
-    for (auto [e, t, fr] : button_view.each()) {
-        t.position.x = (win_size.x - fr.shape.getSize().x) / 2.f;
-        t.position.y = current_y;
-
-        current_y += fr.shape.getSize().y + spacing;
-    }
 }
-
 
 ME_REGISTER_GAME_STATE("godlike:main_menu", godlike::states::MainMenu)
-ME_REGISTER_SYSTEM(
-    "godlike:states:main_menu:update",
-    me::SystemPhase::Update,
-    0,
-    update
-)

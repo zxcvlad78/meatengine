@@ -1,53 +1,48 @@
 #include <meatengine/SystemRegistry.hpp>
 #include <meatengine/MainLoop.hpp>
 
-#include <meatengine/cmp/Transform.hpp>
-#include <meatengine/cmp/ZIndex.hpp>
+#include <meatengine/cmp/ui/ComputedNode.hpp>
+#include <meatengine/cmp/GlobalTransform.hpp>
 #include <meatengine/cmp/ui/FillRect.hpp>
 #include <meatengine/cmp/ui/Label.hpp>
 
-namespace me {
-    static void render() {
-        auto& reg = MainLoop::get_registry();
-        auto& window = MainLoop::get_window();
+#include <algorithm>
+#include <vector>
 
-        std::vector<std::pair<int, entt::entity>> order;
-        for (auto [e, fr] : reg.view<cmp::ui::FillRect>().each()) {
-            int z = 0;
-            if (auto* zi = reg.try_get<cmp::ZIndex>(e)) z = zi->value;
-            order.emplace_back(z, e);
-        }
-        std::stable_sort(order.begin(), order.end(), [](auto& a, auto& b) {
-			return a.first < b.first;
-		});
+namespace {
 
-        for (auto [z, e] : order) {
-            auto& fr = reg.get<cmp::ui::FillRect>(e);
-            auto* t = reg.try_get<cmp::Transform>(e);
-            if (!t) continue;
+using namespace me;
 
-            fr.shape.setPosition(t->position);
-            fr.shape.setRotation(t->rotation);
-            fr.shape.setScale(t->scale);
+void run() {
+    auto& r = me::MainLoop::get_registry();
+    auto& win = me::MainLoop::get_window();
 
-            window.draw(fr.shape);
-        }
+    std::vector<entt::entity> order;
+    for (auto [e, _] : r.view<me::cmp::ui::ComputedNode>().each())
+        order.push_back(e);
 
-        for (auto [e, l, t] : reg.view<cmp::ui::Label, cmp::Transform>().each()) {
-            if (!l.text.has_value()) continue;
+    std::sort(order.begin(), order.end(), [&](entt::entity a, entt::entity b) {
+        return r.get<me::cmp::ui::ComputedNode>(a).stack_index
+             < r.get<me::cmp::ui::ComputedNode>(b).stack_index;
+    });
 
-            l.text->setPosition(t.position);
-            l.text->setRotation(t.rotation);
-            l.text->setScale(t.scale);
-            
-            window.draw(*l.text);
-        }
+    for (auto e : order) {
+        sf::Transform xf = r.try_get<me::cmp::GlobalTransform>(e)
+                         ? r.get<me::cmp::GlobalTransform>(e).transform
+                         : sf::Transform{};
+
+        if (auto* fr = r.try_get<me::cmp::ui::FillRect>(e))
+            win.draw(fr->shape, xf);
+
+        if (auto* lb = r.try_get<me::cmp::ui::Label>(e); lb && lb->text)
+            win.draw(*lb->text, xf);
     }
 }
 
-ME_REGISTER_SYSTEM(
-    "engine:ui:render",
+}
+
+ME_REGISTER_SYSTEM("engine:ui:render",
     me::SystemPhase::PostRender,
-    std::numeric_limits<int>::min() + 8,
-    me::render
+    8,
+    run
 )
