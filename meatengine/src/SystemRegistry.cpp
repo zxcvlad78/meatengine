@@ -126,8 +126,14 @@ void SystemRegistry::run(SystemPhase phase) {
 
     ensure_sorted(phase);
 
+    std::vector<std::pair<std::string, std::function<void()>>> snapshot;
+    snapshot.reserve(bucket(phase).entries.size());
     for (auto& e : bucket(phase).entries) {
-        if (e.func) e.func();
+        snapshot.emplace_back(e.id, e.func);
+    }
+
+    for (auto& [id, fn] : snapshot) {
+        if (fn) fn();
     }
 }
 

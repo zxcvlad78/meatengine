@@ -39,7 +39,7 @@ static void bind(sol::state& lua) {
                 return l.text ? l.text->getCharacterSize() : 0u;
             },
             [](me::cmp::ui::Label& l, unsigned int s) {
-                if (l.text) l.text->setCharacterSize(s);
+                l.set_character_size(s);
             }
         ),
 

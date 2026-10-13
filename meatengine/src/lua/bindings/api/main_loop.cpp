@@ -11,6 +11,11 @@ static void bind(sol::state& lua) {
         []() -> entt::registry& {
             return me::MainLoop::get_registry();
         });
+
+    table.set_function("get_dt",
+        []() -> float {
+            return me::MainLoop::get_dt();
+        });
     
     table.set_function("get_window",
         []() -> sf::RenderWindow& {

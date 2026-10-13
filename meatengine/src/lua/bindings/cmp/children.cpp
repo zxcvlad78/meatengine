@@ -2,7 +2,9 @@
 #include <meatengine/cmp/Children.hpp>
 
 static void bind(sol::state& lua) {
-    lua.new_usertype<me::cmp::Children>("Children", sol::no_constructor);
+    lua.new_usertype<me::cmp::Children>("Children", sol::no_constructor,
+        "entities", &me::cmp::Children::entities
+    );
 
     me::lua::register_component<me::cmp::Children>("Children", lua);
 }
