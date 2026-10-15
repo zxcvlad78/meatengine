@@ -9,6 +9,8 @@
 #include <meatengine/SystemRegistry.hpp>
 #include <meatengine/registry_setup.hpp>
 
+#include <meatengine/meatnet/Network.hpp>
+
 namespace me {
 
     void MainLoop::init(const std::string& title, sf::VideoMode default_mode) {
@@ -127,6 +129,9 @@ namespace me {
     }
 
     void MainLoop::run(std::unique_ptr<GameState> initial_state) {
+        if (!net::InitNetwork())
+            printf("[MainLoop] run: Falied to initialize Network\n");
+
         change_state(std::move(initial_state));
 
         while (m_window.isOpen()) {
@@ -171,6 +176,8 @@ namespace me {
 
             m_window.display();
         }
+
+        net::ShutdownNetwork();
     }
 
 } // namespace me

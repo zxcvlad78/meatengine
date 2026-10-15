@@ -19,8 +19,8 @@ public:
 
     ConnectionID GetConnectionID() const { return m_hConnection; }
 
-    void SetOnConnected(OnConnectedCallback cb)           { m_onConnected = cb; }
-    void SetOnDisconnected(OnDisconnectedCallback cb)     { m_onDisconnected = cb; }
+    void SetOnConnected(OnConnectedCallback cb) { m_onConnected = cb; }
+    void SetOnDisconnected(OnDisconnectedCallback cb) { m_onDisconnected = cb; }
     void SetOnMessageReceived(OnServerMessageCallback cb) { m_onMessage = cb; }
 
 protected:
