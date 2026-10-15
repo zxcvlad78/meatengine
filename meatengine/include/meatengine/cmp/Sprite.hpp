@@ -14,6 +14,8 @@ namespace me::cmp {
         sf::Vector2f offset{};
         bool center = false;
 
+        bool offset_dirty = true;
+
         Sprite() = default;
 
         explicit Sprite(entt::resource<me::Texture> tex)

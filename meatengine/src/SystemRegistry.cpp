@@ -116,6 +116,7 @@ void SystemRegistry::clear() {
 
 void SystemRegistry::clear(SystemPhase phase) {
     if (phase == SystemPhase::Invalid) return;
+
     auto& b = bucket(phase);
     b.entries.clear();
     b.sorted = true;
@@ -125,15 +126,9 @@ void SystemRegistry::run(SystemPhase phase) {
     if (phase == SystemPhase::Invalid) return;
 
     ensure_sorted(phase);
-
-    std::vector<std::pair<std::string, std::function<void()>>> snapshot;
-    snapshot.reserve(bucket(phase).entries.size());
-    for (auto& e : bucket(phase).entries) {
-        snapshot.emplace_back(e.id, e.func);
-    }
-
-    for (auto& [id, fn] : snapshot) {
-        if (fn) fn();
+    auto& entries = bucket(phase).entries;
+    for (size_t i = 0; i < entries.size(); ++i) {
+        if (entries[i].func) entries[i].func();
     }
 }
 

@@ -100,4 +100,4 @@ ISteamNetworkingSockets* GetSocketsInterface() {
     return g_pSockets;
 }
 
-} // namespace MeatNet
+}

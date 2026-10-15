@@ -175,4 +175,4 @@ bool BinaryReader::ReadRaw(void* outData, size_t size) {
     return true;
 }
 
-} // namespace MeatNet
+}

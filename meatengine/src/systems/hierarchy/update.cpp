@@ -56,7 +56,7 @@ using namespace me;
 }
 
 ME_REGISTER_SYSTEM("engine:hierarchy:update",
-    me::SystemPhase::Update,
-    3,
-    run
+   me::SystemPhase::Update,
+   3,
+   run
 )

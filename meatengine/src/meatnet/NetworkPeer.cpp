@@ -16,4 +16,4 @@ void NetworkPeer::Log(LogLevel level, const char* msg) {
     }
 }
 
-} // namespace me::net
+}

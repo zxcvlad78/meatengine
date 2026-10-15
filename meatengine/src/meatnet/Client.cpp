@@ -132,4 +132,4 @@ void Client::SteamNetConnectionStatusChangedCallback(SteamNetConnectionStatusCha
     }
 }
 
-} // namespace MeatNet
+}
