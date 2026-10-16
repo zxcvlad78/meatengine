@@ -3,6 +3,8 @@ PackedEntity.register("core:player", function(world)
     world:add_Transform(e)
     world:add_Velocity(e)
     world:add_PlayerInput(e)
+    local sp = world:add_Sprite(e)
+    sp.texture = ResourceLoader.load_Texture("data/core/res/textures/pacan.png")
     local move_speed = world:add_MoveSpeed(e)
     move_speed.value = 100
     local cam = world:add_Camera(e)

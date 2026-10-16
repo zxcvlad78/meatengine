@@ -1,18 +1,22 @@
 #include <meatengine/SystemRegistry.hpp>
 #include <meatengine/MainLoop.hpp>
+#include <meatengine/meatnet/Network.hpp>
 
 #include <meatengine/console/Console.hpp>
 
 #include <godlike/cmp/MoveSpeed.hpp>
 #include <godlike/cmp/PlayerInput.hpp>
 #include <meatengine/cmp/Velocity.hpp>
+#include <meatengine/cmp/net/Authority.hpp>
 
 static void player_input() {
 	auto& reg = me::MainLoop::get_registry();
 
 	auto view = reg.view<godlike::cmp::MoveSpeed, me::cmp::Velocity, godlike::cmp::PlayerInput>();
-	
+
 	for (auto [entity, movespeed, velocity] : view.each()) {
+		if (!me::net::Network::is_authority(entity)) continue;
+
 		velocity.linear.x = 0.0f;
 		velocity.linear.y = 0.0f;
 

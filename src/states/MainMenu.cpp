@@ -22,6 +22,8 @@
 #include <meatengine/cmp/ui/Focusable.hpp>
 #include <meatengine/cmp/ui/OnEvent.hpp>
 
+#include <meatengine/meatnet/Network.hpp>
+
 #include <godlike/states/MainMenu.hpp>
 
 using namespace me;
@@ -56,21 +58,25 @@ void MainMenu::on_enter(sf::RenderWindow&, entt::registry& r) {
     auto title = PackedEntity::spawn("core:ui:title", r);
     hierarchy::set_parent(r, title, bg);
 
-    auto play_btn = PackedEntity::spawn("core:ui:button", r);
-    hierarchy::set_button_text(r, play_btn, "Play");
-
+    auto host_btn = PackedEntity::spawn("core:ui:button", r);
+    auto conn_btn = PackedEntity::spawn("core:ui:button", r);
     auto mods_btn = PackedEntity::spawn("core:ui:button", r);
-    hierarchy::set_button_text(r, mods_btn, "Mods");
 
-    if (mods_btn == entt::null || play_btn == entt::null) {
+    if (mods_btn == entt::null || host_btn == entt::null || conn_btn == entt::null) {
         std::cerr << "[MainMenu] failed to spawn buttons\n";
         return;
     }
 
-    hierarchy::set_parent(r, play_btn, bg);
-    hierarchy::set_parent(r, mods_btn, bg);
+    hierarchy::set_parent(r, host_btn, bg);
+    hierarchy::set_button_text(r, host_btn, "Host");
 
-    for (auto btn : { mods_btn, play_btn }) {
+    hierarchy::set_parent(r, conn_btn, bg);
+    hierarchy::set_button_text(r, conn_btn, "Connect");
+
+    hierarchy::set_parent(r, mods_btn, bg);
+    hierarchy::set_button_text(r, mods_btn, "Mods");
+
+    for (auto btn : { mods_btn, host_btn, conn_btn }) {
         if (auto* n = r.try_get<Node>(btn)) {
             n->width = Val::Percent(25.f);
             n->height = Val::Px(40.f);
@@ -79,9 +85,19 @@ void MainMenu::on_enter(sf::RenderWindow&, entt::registry& r) {
             fs->flex_grow = 0.f;
     }
 
-    r.emplace<OnEvent>(play_btn).cb =
+    r.emplace<OnEvent>(host_btn).cb =
         [](entt::registry&, entt::entity, Event& ev) {
             if (ev.type == EventType::Click) {
+                me::net::Network::start_server(2302);
+                ScriptedStateRegistry::change_to("core:world");
+                ev.handled = true;
+            }
+        };
+
+    r.emplace<OnEvent>(conn_btn).cb =
+        [](entt::registry&, entt::entity, Event& ev) {
+            if (ev.type == EventType::Click) {
+                me::net::Network::connect("127.0.0.1:2302");
                 ScriptedStateRegistry::change_to("core:world");
                 ev.handled = true;
             }

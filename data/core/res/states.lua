@@ -1,9 +1,9 @@
--- tilemap.tileset = me::ResourceLoader::load<me::TileSet>("data/core/res/tilesets/tileset.json");
--- tilemap.load_tiles("data/core/res/tilemaps/tilemap.json");
 
 ScriptedStateRegistry.register("core:world", {
     on_enter = function(w, r) 
-        local player = PackedEntity.spawn("core:player", MainLoop.get_registry())
+        if Network.is_server() then
+            local player = PackedEntity.spawn("core:player", MainLoop.get_registry())
+        end
 
         local e = r:create()
         r:add_Transform(e)

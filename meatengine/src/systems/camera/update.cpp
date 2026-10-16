@@ -1,9 +1,13 @@
 #include <meatengine/SystemRegistry.hpp>
 #include <meatengine/MainLoop.hpp>
+#include <meatengine/meatnet/Network.hpp>
 
 #include <meatengine/cmp/Camera.hpp>
 #include <meatengine/cmp/Transform.hpp>
 #include <SFML/Audio/Listener.hpp>
+
+#include <meatengine/cmp/net/Authority.hpp>
+#include <iostream>
 
 namespace me {
     static void update() {
@@ -14,15 +18,16 @@ namespace me {
         auto view = reg.view<cmp::Transform, cmp::Camera>();
 
         for (auto [entity, transform, camera] : view.each()) {
+            if (!me::net::Network::is_authority(entity)) continue;
+
             sf::Vector2f current_center = camera.view.getCenter();
             sf::Vector2f target_center = {transform.position.x, transform.position.y};
             sf::Vector2f lex = target_center;
-
+            
             if (camera.smooth) {
                 lex.x = current_center.x + (target_center.x - current_center.x) * 5.0f * dt;
                 lex.y = current_center.y + (target_center.y - current_center.y) * 5.0f * dt;
             }
-
 
             camera.view.setCenter(lex);
             auto window_size = static_cast<sf::Vector2f>(window.getSize());

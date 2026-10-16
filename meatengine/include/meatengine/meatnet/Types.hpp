@@ -13,7 +13,7 @@ using ConnectionID = HSteamNetConnection;
 using ListenSocket = HSteamListenSocket;
 using PollGroup = HSteamNetPollGroup;
 
-constexpr uint16 kDefaultPort = 27020;
+constexpr uint16 kDefaultPort = 2302;
 constexpr int kMaxMessageSize = 4096;
 
 // Callback type for client connection event (server)
