@@ -24,7 +24,7 @@
 ```
 2. **run:**
 ```
-git clone <this-repo>
+git clone https://github.com/zxcvlad78/meatengine.git
 ```
 3. **move the "/meatengine" folder into your project directory**
 4. **add these lines to your CMakeLists.txt file:**
