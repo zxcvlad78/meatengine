@@ -61,7 +61,6 @@ void BinaryWriter::WriteFloat(float v) {
     std::memcpy(&bits, &v, 4);
     uint32_t net = HostToNet32(bits);
     WriteRaw(&net, sizeof(net));
-    WriteRaw(&net, 4);
 }
 
 void BinaryWriter::WriteBool(bool v) {

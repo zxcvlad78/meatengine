@@ -1,71 +1,165 @@
 #include <meatengine/SystemRegistry.hpp>
 #include <meatengine/MainLoop.hpp>
-
-#include <meatengine/cmp/GlobalTransform.hpp>
-#include <meatengine/cmp/net/NetId.hpp>
 #include <meatengine/meatnet/Network.hpp>
+#include <meatengine/meatnet/Replication.hpp>
 
+#include <meatengine/cmp/Transform.hpp>
+#include <meatengine/cmp/net/NetId.hpp>
+#include <meatengine/cmp/net/Authority.hpp>
+
+#include <cmath>
 #include <unordered_map>
-#include <unordered_set>
+#include <vector>
 
 namespace {
 
 using namespace me;
+using namespace me::net;
 
-constexpr float SEND_INTERVAL = 1.f / 30.f;
-static float s_accum = 0.f;
+constexpr float TICK_RATE = 1.f / 30.f;
+constexpr float KEYFRAME_TIME = 1.f;
+constexpr std::size_t BATCH = 32;
 
-std::unordered_map<entt::entity, sf::Transform>& last_sent() {
-    static std::unordered_map<entt::entity, sf::Transform> m;
-    return m;
+struct Entry {
+    cmp::Transform last;
+    float last_sent = 0.f;
+};
+
+std::unordered_map<entt::entity, Entry>& cache() {
+    static std::unordered_map<entt::entity, Entry> c;
+    return c;
 }
 
-bool transform_changed(const sf::Transform& a, const sf::Transform& b) {
-    const float* ma = a.getMatrix();
-    const float* mb = b.getMatrix();
-    
-    constexpr int idx[] = {0, 4, 8, 1, 5, 9, 2, 6, 10};
-    for (int i : idx)
-        if (std::abs(ma[i] - mb[i]) > 1e-4f) return true;
-    return false;
+bool transform_changed(const cmp::Transform& a, const cmp::Transform& b) {
+    constexpr float eps = 1e-4f;
+    return std::abs(a.position.x - b.position.x) > eps
+        || std::abs(a.position.y - b.position.y) > eps
+        || std::abs(a.rotation.asRadians() - b.rotation.asRadians()) > eps
+        || std::abs(a.scale.x - b.scale.x) > eps
+        || std::abs(a.scale.y - b.scale.y) > eps;
 }
 
-void run() {
+void server_tick() {
     auto& reg = MainLoop::get_registry();
-    float dt = MainLoop::get_dt();
+    auto& c = cache();
+    const float now = Network::now_ms() * 0.001f;
 
-    s_accum += dt;
-    if (s_accum < SEND_INTERVAL) return;
-    s_accum = 0.f;
+    std::vector<std::pair<entt::entity, bool>> candidates;
+    candidates.reserve(64);
 
-    auto* srv = net::Network::server();
-    if (!srv) return;
-
-    auto& cache = last_sent();
-
-    for (auto [e, gt, id] : reg.view<cmp::GlobalTransform, cmp::net::NetId>().each()) {
-        auto it = cache.find(e);
-        if (it != cache.end() && !transform_changed(it->second, gt.transform)) {
+    for (auto [e, t, nid] : reg.view<cmp::Transform, cmp::net::NetId>().each()) {
+        auto it = c.find(e);
+        if (it == c.end()) {
+            c[e] = Entry{ t, now };
+            candidates.emplace_back(e, true);
             continue;
         }
-        cache[e] = gt.transform;
+        bool changed = transform_changed(it->second.last, t);
+        bool keyframe = (now - it->second.last_sent) >= KEYFRAME_TIME;
+        if (changed || keyframe) {
+            it->second.last = t;
+            it->second.last_sent = now;
+            candidates.emplace_back(e, changed);
+        }
+    }
 
-        auto bytes = me::cmp::serialize(gt);
+    if (candidates.empty()) return;
 
-        srv->Broadcast(
-            &bytes,
-            bytes.size(),
-            k_HSteamNetConnection_Invalid,
-            false
+    for (std::size_t base = 0; base < candidates.size(); base += BATCH) {
+        const std::size_t n = std::min(BATCH, candidates.size() - base);
+
+        BinaryWriter body;
+        body.WriteUInt32(static_cast<uint32_t>(n));
+
+        for (std::size_t i = 0; i < n; ++i) {
+            auto e = candidates[base + i].first;
+            auto nid = reg.get<cmp::net::NetId>(e).value;
+            auto mask = Replication::mask_for(reg, e);
+
+            body.WriteUInt32(nid);
+            body.WriteUInt64(mask);
+            Replication::write_components(body, reg, e, mask);
+        }
+
+        Network::send(
+            MsgType::EntitySnapshot,
+            SendFlag::Unreliable,
+            body.GetBuffer()
         );
     }
 
-    if (cache.size() > reg.storage<entt::entity>().size()) {
-        for (auto it = cache.begin(); it != cache.end(); ) {
-            if (!reg.valid(it->first)) it = cache.erase(it);
-            else ++it;
+    for (auto it = c.begin(); it != c.end(); ) {
+        if (!reg.valid(it->first)) it = c.erase(it);
+        else ++it;
+    }
+}
+
+void client_tick() {
+    auto& reg = MainLoop::get_registry();
+    auto& c   = cache();
+    const float now = Network::now_ms() * 0.001f;
+
+    std::vector<entt::entity> to_send;
+    to_send.reserve(16);
+
+    for (auto [e, t, nid] : reg.view<cmp::Transform, cmp::net::NetId>().each()) {
+        if (!Network::is_authority(e)) continue;
+
+        auto it = c.find(e);
+        if (it == c.end()) {
+            c[e] = Entry{ t, now };
+            to_send.push_back(e);
+            continue;
+        }
+        bool changed = transform_changed(it->second.last, t);
+        bool keyframe = (now - it->second.last_sent) >= KEYFRAME_TIME;
+        if (changed || keyframe) {
+            it->second.last = t;
+            it->second.last_sent = now;
+            to_send.push_back(e);
         }
     }
+
+    if (to_send.empty()) return;
+
+    BinaryWriter body;
+    body.WriteUInt32(static_cast<uint32_t>(to_send.size()));
+
+    for (auto e : to_send) {
+        auto nid  = reg.get<cmp::net::NetId>(e).value;
+        auto mask = Replication::mask_for(reg, e);
+
+        body.WriteUInt32(nid);
+        body.WriteUInt64(mask);
+        Replication::write_components(body, reg, e, mask);
+    }
+
+    Network::send(
+        kServerPeerId,
+        MsgType::EntitySnapshot,
+        SendFlag::Unreliable,
+        body.GetBuffer()
+    );
+
+    for (auto it = c.begin(); it != c.end(); ) {
+        if (!reg.valid(it->first)) it = c.erase(it);
+        else ++it;
+    }
+}
+
+void tick() {
+    if (Network::is_server()) server_tick();
+    else if (Network::is_client()) client_tick();
+}
+
+float s_accum = 0.f;
+
+void run() {
+    if (!Network::is_server() && !Network::is_client()) return;
+    s_accum += MainLoop::get_dt();
+    if (s_accum < TICK_RATE) return;
+    s_accum = 0.f;
+    tick();
 }
 
 }

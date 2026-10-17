@@ -1,10 +1,10 @@
 #pragma once
 #include <cstdint>
 
-#include <meatengine/meatnet/Types.hpp>
+#include <meatengine/meatnet/Protocol.hpp>
 
 namespace me::cmp::net {
     struct Authority {
-        me::net::ConnectionID id = 0;
+        me::net::PeerId id = 0;
     };
 }
