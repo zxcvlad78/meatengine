@@ -11,6 +11,9 @@
 
 static void player_input() {
 	auto& reg = me::MainLoop::get_registry();
+	auto& window = me::MainLoop::get_window();
+
+	if (!window.isOpen()) return;
 
 	auto view = reg.view<godlike::cmp::MoveSpeed, me::cmp::Velocity, godlike::cmp::PlayerInput>();
 

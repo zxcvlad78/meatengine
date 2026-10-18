@@ -29,21 +29,51 @@ static void bind(sol::state& lua) {
         return me::net::Network::is_client();
     });
 
-    table.set_function("chat_msg", [](const std::string& text) {
-        if (auto* client = me::net::Network::client()) {
-            me::net::BinaryWriter writer;
-            writer.WriteUInt8(2);
-            writer.WriteString(text);
-            client->Send(writer.GetBuffer().data(), writer.Size(), true);
-        } else if (auto* server = me::net::Network::server()) {
-            std::string s = "Host: " + text;
-            printf("[Network][Server][Chat] %s\n", text.c_str());
-            me::net::BinaryWriter writer;
-            writer.WriteUInt8(2);
-            writer.WriteString(s);
-            server->Send(writer.GetBuffer().data(), writer.Size(), true);
-        }
-    });
+    table.set_function("peer_id",
+        []() { return me::net::Network::peer_id(); });
+
+    table.set_function("spawn_entity",
+        [](const std::string& id, uint32_t owner) {
+            return me::net::Network::spawn_entity(id, owner);
+        });
+
+    table.set_function("despawn_entity",
+        [](entt::entity e) { me::net::Network::despawn_entity(e); });
+
+    table.set_function("set_authority",
+        [](entt::entity e, uint32_t owner) {
+            me::net::Network::set_authority(e, owner);
+        });
+
+    table.set_function("set_on_peer_connected",
+        [](sol::protected_function fn) {
+            me::net::Network::set_on_peer_connected(
+                [fn](me::net::PeerId pid) {
+                    auto r = fn(pid);
+                    if (!r.valid()) {
+                        sol::error e = r;
+                        std::cerr << "[Network.on_peer_joined] " << e.what() << "\n";
+                    }
+                });
+        });
+
+    table.set_function("set_on_peer_disconnected",
+        [](sol::protected_function fn) {
+            me::net::Network::set_on_peer_disconnected(
+                [fn](me::net::PeerId pid) {
+                    auto r = fn(pid);
+                    if (!r.valid()) {
+                        sol::error e = r;
+                        std::cerr << "[Network.on_peer_left] " << e.what() << "\n";
+                    }
+                });
+        });
+
+    table.set_function("set_auto_cleanup_owned",
+        [](bool v) { me::net::Network::set_auto_cleanup_owned(v); });
+
+    table.set_function("get_auto_cleanup_owned",
+        []() { return me::net::Network::get_auto_cleanup_owned(); });
     
 }
 

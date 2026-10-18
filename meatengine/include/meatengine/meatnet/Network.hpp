@@ -18,6 +18,8 @@ class Network {
 public:
     Network() = delete;
 
+    using PeerEventCallback = std::function<void(PeerId)>;
+
     static Server* server();
     static Client* client();
 
@@ -53,6 +55,15 @@ public:
     static void handle_message(ConnectionID from_conn, const std::uint8_t* data, std::uint32_t size);
 
     static std::uint32_t now_ms();
+    static entt::entity spawn_entity(const std::string& packed_id, PeerId owner = kServerPeerId);
+    static void despawn_entity(entt::entity e);
+    static void set_authority(entt::entity e, PeerId owner);
+
+    static void set_on_peer_connected(PeerEventCallback cb);
+    static void set_on_peer_disconnected(PeerEventCallback cb);
+
+    static void set_auto_cleanup_owned(bool v);
+    static bool get_auto_cleanup_owned();
 
 private:
     inline static std::unordered_map<uint64_t, entt::entity> _nid_map;
@@ -69,4 +80,4 @@ private:
     inline static uint32_t _seq_counter = 1;
 };
 
-} // namespace me::net
+}

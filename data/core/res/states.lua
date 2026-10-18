@@ -2,7 +2,10 @@
 ScriptedStateRegistry.register("core:world", {
     on_enter = function(w, r) 
         if Network.is_server() then
-            local player = PackedEntity.spawn("core:player", MainLoop.get_registry())
+            Network.set_on_peer_connected(function(pid)
+                Network.spawn_entity("core:player", pid)
+            end)
+            Network.spawn_entity("core:player", Network.peer_id())
         end
 
         local e = r:create()
