@@ -1,6 +1,6 @@
 #include <meatengine/lua/LuaBinder.hpp>
-#include <meatengine/meatnet/Rpc.hpp>
-#include <meatengine/meatnet/Serialization.hpp>
+#include <meatengine/net/Rpc.hpp>
+#include <meatengine/net/Serialization.hpp>
 
 #include <cmath>
 #include <iostream>
@@ -19,7 +19,7 @@ void write_lua_value(BinaryWriter& w, const sol::object& v) {
         case sol::type::number: {
             double d = v.as<double>();
             if (!std::isfinite(d)) {
-                w.WriteFloat(static_cast<float>(d));
+                w.write(static_cast<float>(d));
                 return;
             }
 
@@ -28,7 +28,7 @@ void write_lua_value(BinaryWriter& w, const sol::object& v) {
             if (is_integral && d >= 0.0 &&
                 d <= static_cast<double>(std::numeric_limits<uint32_t>::max())
             ) {
-                w.WriteUInt32(static_cast<uint32_t>(d));
+                w.write(static_cast<uint32_t>(d));
                 return;
             }
 
@@ -36,22 +36,22 @@ void write_lua_value(BinaryWriter& w, const sol::object& v) {
                 d >= static_cast<double>(std::numeric_limits<int32_t>::min()) && 
                 d < 0.0
             ) {
-                w.WriteInt32(static_cast<int32_t>(d));
+                w.write(static_cast<int32_t>(d));
                 return; 
             }
 
             if (is_integral && std::abs(d) < 9.0e18) {
-                w.WriteInt64(static_cast<int64_t>(d));
+                w.write(static_cast<int64_t>(d));
                 return;
             }
 
-            w.WriteFloat(static_cast<float>(d));
+            w.write(static_cast<float>(d));
             return;
         }
-        case sol::type::boolean: w.WriteBool(v.as<bool>()); return;
-        case sol::type::string: w.WriteString(v.as<std::string>()); return;
+        case sol::type::boolean: w.write(v.as<bool>()); return;
+        case sol::type::string: w.write(v.as<std::string>()); return;
         default:
-            throw std::runtime_error("unsupported Lua type (only number, boolean, string)");
+            throw std::runtime_error("unsupported Lua type (only int, float, bool, string)");
     }
 }
 
@@ -70,7 +70,7 @@ static void bind(sol::state& lua) {
         [](RpcContext& ctx, sol::variadic_args va) {
             BinaryWriter w;
             for (auto v : va) write_lua_value(w, v);
-            ctx.reply_payload = w.GetBuffer();
+            ctx.reply_payload = w.buffer();
             ctx.has_reply = true;
         });
 
@@ -100,21 +100,21 @@ static void bind(sol::state& lua) {
         [](const std::string& name, sol::variadic_args va) {
             BinaryWriter w;
             for (auto v : va) write_lua_value(w, v);
-            me::net::Rpc::invoke(name, w.GetBuffer());
+            me::net::Rpc::invoke(name, w.buffer());
         });
 
     rpc.set_function("invoke_on",
         [](me::net::PeerId target, const std::string& name, sol::variadic_args va) {
             BinaryWriter w;
             for (auto v : va) write_lua_value(w, v);
-            me::net::Rpc::invoke(target, name, w.GetBuffer());
+            me::net::Rpc::invoke(target, name, w.buffer());
         });
 
     rpc.set_function("broadcast",
     [](const std::string& name, sol::variadic_args va) {
         BinaryWriter w;
         for (auto v : va) write_lua_value(w, v);
-        me::net::Rpc::broadcast(name, w.GetBuffer());
+        me::net::Rpc::broadcast(name, w.buffer());
     });
 
     rpc.set_function("invoke_async",
@@ -143,7 +143,7 @@ static void bind(sol::state& lua) {
                         std::cerr << "[Rpc.timeout] " << e.what() << "\n";
                     }
                 },
-                w.GetBuffer(),
+                w.buffer(),
                 timeout_sec);
         });
 
@@ -176,7 +176,7 @@ static void bind(sol::state& lua) {
                         std::cerr << "[Rpc.timeout] " << e.what() << "\n";
                     }
                 },
-                w.GetBuffer(),
+                w.buffer(),
                 timeout_sec);
         });
 

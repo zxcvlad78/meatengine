@@ -1,8 +1,8 @@
 #include <string>
 
 #include <meatengine/lua/LuaBinder.hpp>
-#include <meatengine/meatnet/Network.hpp>
-#include <meatengine/meatnet/Serialization.hpp>
+#include <meatengine/net/Network.hpp>
+#include <meatengine/net/Serialization.hpp>
 
 static void bind(sol::state& lua) {
     lua.new_usertype<me::net::PeerInfo>("PeerInfo",

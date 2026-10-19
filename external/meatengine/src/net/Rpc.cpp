@@ -1,30 +1,30 @@
-#include <meatengine/meatnet/Rpc.hpp>
-#include <meatengine/meatnet/Network.hpp>
+#include <meatengine/net/Rpc.hpp>
+#include <meatengine/net/Network.hpp>
 
 #include <cstdio>
 #include <stdexcept>
 
 namespace me::net {
 
-namespace rpc {
-void write_arg(BinaryWriter& w, std::int8_t v) { w.WriteInt8(v); }
-void write_arg(BinaryWriter& w, std::uint8_t v) { w.WriteUInt8(v); }
-void write_arg(BinaryWriter& w, std::int16_t v) { w.WriteInt16(v); }
-void write_arg(BinaryWriter& w, std::uint16_t v) { w.WriteUInt16(v); }
-void write_arg(BinaryWriter& w, std::int32_t v) { w.WriteInt32(v); }
-void write_arg(BinaryWriter& w, std::uint32_t v) { w.WriteUInt32(v); }
-void write_arg(BinaryWriter& w, std::int64_t v) { w.WriteInt64(v); }
-void write_arg(BinaryWriter& w, std::uint64_t v) { w.WriteUInt64(v); }
-void write_arg(BinaryWriter& w, float v) { w.WriteFloat(v); }
-void write_arg(BinaryWriter& w, double v) { w.WriteFloat(static_cast<float>(v)); }
-void write_arg(BinaryWriter& w, bool v) { w.WriteBool(v); }
-void write_arg(BinaryWriter& w, const std::string& v) { w.WriteString(v); }
-void write_arg(BinaryWriter& w, const char* v) { w.WriteString(v ? std::string{v} : std::string{}); }
-void write_arg(BinaryWriter& w, const std::vector<std::uint8_t>& v) {
-    if (!v.empty())
-        w.WriteBytes(v.data(), v.size());
-}
-}
+// namespace rpc {
+// void write_arg(BinaryWriter& w, std::int8_t v) { w.WriteInt8(v); }
+// void write_arg(BinaryWriter& w, std::uint8_t v) { w.WriteUInt8(v); }
+// void write_arg(BinaryWriter& w, std::int16_t v) { w.WriteInt16(v); }
+// void write_arg(BinaryWriter& w, std::uint16_t v) { w.WriteUInt16(v); }
+// void write_arg(BinaryWriter& w, std::int32_t v) { w.WriteInt32(v); }
+// void write_arg(BinaryWriter& w, std::uint32_t v) { w.WriteUInt32(v); }
+// void write_arg(BinaryWriter& w, std::int64_t v) { w.WriteInt64(v); }
+// void write_arg(BinaryWriter& w, std::uint64_t v) { w.WriteUInt64(v); }
+// void write_arg(BinaryWriter& w, float v) { w.WriteFloat(v); }
+// void write_arg(BinaryWriter& w, double v) { w.WriteFloat(static_cast<float>(v)); }
+// void write_arg(BinaryWriter& w, bool v) { w.WriteBool(v); }
+// void write_arg(BinaryWriter& w, const std::string& v) { w.WriteString(v); }
+// void write_arg(BinaryWriter& w, const char* v) { w.WriteString(v ? std::string{v} : std::string{}); }
+// void write_arg(BinaryWriter& w, const std::vector<std::uint8_t>& v) {
+//     if (!v.empty())
+//         w.WriteBytes(v.data(), v.size());
+// }
+// }
 
 
 std::unordered_map<std::string, RpcHandler>& Rpc::handlers() {
@@ -55,11 +55,11 @@ void Rpc::send(
     const std::vector<std::uint8_t>& args
 ) {
     BinaryWriter w;
-    w.WriteUInt32(rid);
-    w.WriteString(name);
-    if (!args.empty()) w.WriteBytes(args.data(), args.size());
+    w.write(rid);
+    w.write(name);
+    if (!args.empty()) w.write(args.data(), args.size());
 
-    Network::send(target, MsgType::RpcCall, SendFlag::Reliable, w.GetBuffer());
+    Network::send(target, MsgType::RpcCall, SendFlag::Reliable, w.buffer());
 }
 
 void Rpc::send(
@@ -68,22 +68,22 @@ void Rpc::send(
     const std::vector<std::uint8_t>& args
 ) {
     BinaryWriter w;
-    w.WriteUInt32(rid);
-    w.WriteString(name);
-    if (!args.empty()) w.WriteBytes(args.data(), args.size());
+    w.write(rid);
+    w.write(name);
+    if (!args.empty()) w.write(args.data(), args.size());
 
     if (Network::is_server()) {
         Network::send(
             MsgType::RpcCall,
             SendFlag::Reliable,
-            w.GetBuffer()
+            w.buffer()
         );
     } else {
         Network::send(
             kServerPeerId,
             MsgType::RpcCall,
             SendFlag::Reliable,
-            w.GetBuffer()
+            w.buffer()
         );
     }
 }
@@ -107,10 +107,10 @@ void Rpc::broadcast(const std::string& name, const std::vector<std::uint8_t>& ar
         }
     } else {
         BinaryWriter w;
-        w.WriteUInt32(0);
-        w.WriteString(name);
-        if (!args.empty()) w.WriteBytes(args.data(), args.size());
-        Network::send(kServerPeerId, MsgType::RpcCall, SendFlag::Reliable, w.GetBuffer());
+        w.write(0);
+        w.write(name);
+        if (!args.empty()) w.write(args.data(), args.size());
+        Network::send(kServerPeerId, MsgType::RpcCall, SendFlag::Reliable, w.buffer());
     }
 }
 
@@ -148,8 +148,8 @@ std::uint32_t Rpc::invoke_async(
 void Rpc::handle_call(PeerId sender, bool on_server, BinaryReader& r) {
     std::uint32_t rid = 0;
     std::string   name;
-    if (!r.ReadUInt32(rid))  return;
-    if (!r.ReadString(name)) return;
+    if (!r.read(rid))  return;
+    if (!r.read(name)) return;
 
     RpcContext ctx;
     ctx.sender = on_server ? sender : kServerPeerId;
@@ -166,9 +166,9 @@ void Rpc::handle_call(PeerId sender, bool on_server, BinaryReader& r) {
     if (!ctx.has_reply) return;
 
     BinaryWriter w;
-    w.WriteUInt32(rid);
+    w.write(rid);
     if (!ctx.reply_payload.empty())
-        w.WriteBytes(ctx.reply_payload.data(), ctx.reply_payload.size());
+        w.write(ctx.reply_payload.data(), ctx.reply_payload.size());
 
     if (on_server) {
         if (sender != kInvalidPeerId)
@@ -176,21 +176,21 @@ void Rpc::handle_call(PeerId sender, bool on_server, BinaryReader& r) {
                 sender,
                 MsgType::RpcReply,
                 SendFlag::Reliable,
-                w.GetBuffer()
+                w.buffer()
             );
     } else {
         Network::send(
             kServerPeerId,
             MsgType::RpcReply,
             SendFlag::Reliable,
-            w.GetBuffer()
+            w.buffer()
         );
     }
 }
 
 void Rpc::handle_reply(BinaryReader& r) {
     std::uint32_t rid = 0;
-    if (!r.ReadUInt32(rid)) return;
+    if (!r.read(rid)) return;
 
     auto it = pending().find(rid);
     if (it == pending().end()) return;

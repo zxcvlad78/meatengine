@@ -1,7 +1,7 @@
 #pragma once
 
 #include <meatengine/SystemRegistry.hpp>
-#include <meatengine/meatnet/Network.hpp>
+#include <meatengine/net/Network.hpp>
 
 void run() {
     if (auto* s = me::net::Network::server()) s->Update();

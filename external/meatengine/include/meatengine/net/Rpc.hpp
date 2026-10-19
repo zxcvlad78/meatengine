@@ -4,34 +4,38 @@
 #include <unordered_map>
 #include <vector>
 
-#include <meatengine/meatnet/Serialization.hpp>
-#include <meatengine/meatnet/Protocol.hpp>
+#include <meatengine/net/Serialization.hpp>
+#include <meatengine/net/Protocol.hpp>
 
 namespace me::net {
 
 namespace rpc {
-    void write_arg(BinaryWriter& w, std::int8_t v);
-    void write_arg(BinaryWriter& w, std::uint8_t v);
-    void write_arg(BinaryWriter& w, std::int16_t v);
-    void write_arg(BinaryWriter& w, std::uint16_t v);
-    void write_arg(BinaryWriter& w, std::int32_t v);
-    void write_arg(BinaryWriter& w, std::uint32_t v);
-    void write_arg(BinaryWriter& w, std::int64_t v);
-    void write_arg(BinaryWriter& w, std::uint64_t v);
-    void write_arg(BinaryWriter& w, float v);
-    void write_arg(BinaryWriter& w, double v);
-    void write_arg(BinaryWriter& w, bool v);
-    void write_arg(BinaryWriter& w, const std::string& v);
-    void write_arg(BinaryWriter& w, const char* v);
+    namespace detail {
+        template<typename T>
+        using bare_t = std::remove_cv_t<std::remove_reference_t<T>>;
 
-    void write_arg(BinaryWriter& w, const std::vector<std::uint8_t>& v);
-    template<typename T> void write_arg(BinaryWriter&, T&&) = delete;
+        template<typename T>
+        inline constexpr bool is_packable_v =
+            std::is_arithmetic_v<bare_t<T>> ||
+            std::is_same_v<bare_t<T>, std::string> ||
+            std::is_same_v<std::decay_t<T>, std::vector<std::uint8_t>> ||
+            std::is_convertible_v<std::decay_t<T>, const char*>;
+
+        template<typename... Args>
+        inline constexpr bool all_packable_v = (is_packable_v<Args> && ...);
+    }
 
     template<typename... Args>
     std::vector<std::uint8_t> pack(Args&&... args) {
+        static_assert(
+            detail::all_packable_v<Args...>,
+            "rpc::pack(): supported types are arithmetic, std::string, "
+            "const char*, and std::vector<std::uint8_t>"
+        );
+
         BinaryWriter w;
-        (write_arg(w, std::forward<Args>(args)), ...);
-        return w.GetBuffer();
+        (w.write(std::forward<Args>(args)), ...);
+        return w.buffer();
     }
 }
 

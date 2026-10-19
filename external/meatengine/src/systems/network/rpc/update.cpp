@@ -1,7 +1,7 @@
 #include <meatengine/SystemRegistry.hpp>
 #include <meatengine/MainLoop.hpp>
-#include <meatengine/meatnet/Network.hpp>
-#include <meatengine/meatnet/Rpc.hpp>
+#include <meatengine/net/Network.hpp>
+#include <meatengine/net/Rpc.hpp>
 
 static void run() {
     if (me::net::Network::is_server() || me::net::Network::is_client())

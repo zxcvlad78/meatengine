@@ -1,7 +1,7 @@
 #pragma once
 #include <cstdint>
 
-#include <meatengine/meatnet/Protocol.hpp>
+#include <meatengine/net/Protocol.hpp>
 
 namespace me::cmp::net {
     struct Authority {

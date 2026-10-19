@@ -8,9 +8,9 @@
 
 #include <entt/entity/entity.hpp>
 
-#include <meatengine/meatnet/Client.hpp>
-#include <meatengine/meatnet/Server.hpp>
-#include <meatengine/meatnet/Protocol.hpp>
+#include <meatengine/net/Client.hpp>
+#include <meatengine/net/Server.hpp>
+#include <meatengine/net/Protocol.hpp>
 
 namespace me::net {
 

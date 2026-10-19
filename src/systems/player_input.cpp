@@ -1,6 +1,6 @@
 #include <meatengine/SystemRegistry.hpp>
 #include <meatengine/MainLoop.hpp>
-#include <meatengine/meatnet/Network.hpp>
+#include <meatengine/net/Network.hpp>
 
 #include <meatengine/console/Console.hpp>
 

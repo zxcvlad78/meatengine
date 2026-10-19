@@ -22,7 +22,7 @@
 #include <meatengine/cmp/ui/Focusable.hpp>
 #include <meatengine/cmp/ui/OnEvent.hpp>
 
-#include <meatengine/meatnet/Network.hpp>
+#include <meatengine/net/Network.hpp>
 
 #include <godlike/states/MainMenu.hpp>
 

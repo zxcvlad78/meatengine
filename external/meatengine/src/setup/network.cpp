@@ -1,6 +1,6 @@
 #pragma once
 
-#include <meatengine/meatnet/Network.hpp>
+#include <meatengine/net/Network.hpp>
 
 #include <meatengine/registry_setup.hpp>
 #include <meatengine/cmp/net/NetId.hpp>

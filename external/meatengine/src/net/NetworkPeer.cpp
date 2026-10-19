@@ -1,4 +1,4 @@
-#include <meatengine/meatnet/NetworkPeer.hpp>
+#include <meatengine/net/NetworkPeer.hpp>
 
 namespace me::net {
 

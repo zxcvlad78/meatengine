@@ -9,7 +9,7 @@
 #include <meatengine/SystemRegistry.hpp>
 #include <meatengine/registry_setup.hpp>
 
-#include <meatengine/meatnet/Network.hpp>
+#include <meatengine/net/Network.hpp>
 
 namespace me {
 

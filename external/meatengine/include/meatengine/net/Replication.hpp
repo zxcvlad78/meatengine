@@ -7,7 +7,7 @@
 #include <string>
 #include <vector>
 
-#include <meatengine/meatnet/Serialization.hpp>
+#include <meatengine/net/Serialization.hpp>
 
 namespace me::net {
 

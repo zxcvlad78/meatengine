@@ -2,8 +2,8 @@
 #include <cstdint>
 #include <vector>
 #include <string>
-#include <meatengine/meatnet/Types.hpp>
-#include <meatengine/meatnet/Serialization.hpp>
+#include <meatengine/net/Types.hpp>
+#include <meatengine/net/Serialization.hpp>
 
 namespace me::net {
 
@@ -75,12 +75,12 @@ inline void write_envelope(
     std::uint32_t seq,
     const std::vector<std::uint8_t>& payload
 ) {
-    w.WriteUInt8(static_cast<std::uint8_t>(type));
-    w.WriteUInt8(static_cast<std::uint8_t>(send_flag));
-    w.WriteUInt32(seq);
-    w.WriteUInt16(static_cast<std::uint16_t>(payload.size()));
+    w.write(static_cast<std::uint8_t>(type));
+    w.write(static_cast<std::uint8_t>(send_flag));
+    w.write(seq);
+    w.write(static_cast<std::uint16_t>(payload.size()));
     if (!payload.empty())
-        w.WriteBytes(payload.data(), payload.size());
+        w.write(payload.data(), payload.size());
 }
  
 struct Envelope {
@@ -95,19 +95,19 @@ inline void write_envelope(
     const Envelope& env,
     const std::vector<std::uint8_t>& payload
 ) {
-    w.WriteUInt8(static_cast<std::uint8_t>(env.type));
-    w.WriteUInt8(static_cast<std::uint8_t>(env.send_flag));
-    w.WriteUInt32(env.seq);
-    w.WriteUInt16(static_cast<std::uint16_t>(payload.size()));
-    if (!payload.empty()) w.WriteBytes(payload.data(), payload.size());
+    w.write(static_cast<std::uint8_t>(env.type));
+    w.write(static_cast<std::uint8_t>(env.send_flag));
+    w.write(env.seq);
+    w.write(static_cast<std::uint16_t>(payload.size()));
+    if (!payload.empty()) w.write(payload.data(), payload.size());
 }
 
 inline bool read_envelope(BinaryReader& r, Envelope& out) {
     std::uint8_t t, c;
-    if (!r.ReadUInt8(t)) return false;
-    if (!r.ReadUInt8(c)) return false;
-    if (!r.ReadUInt32(out.seq)) return false;
-    if (!r.ReadUInt16(out.size)) return false;
+    if (!r.read(t)) return false;
+    if (!r.read(c)) return false;
+    if (!r.read(out.seq)) return false;
+    if (!r.read(out.size)) return false;
     out.type = static_cast<MsgType>(t);
     out.send_flag = static_cast<SendFlag>(c);
     return true;

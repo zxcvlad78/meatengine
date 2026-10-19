@@ -1,7 +1,7 @@
 #include <meatengine/SystemRegistry.hpp>
 #include <meatengine/MainLoop.hpp>
-#include <meatengine/meatnet/Network.hpp>
-#include <meatengine/meatnet/Replication.hpp>
+#include <meatengine/net/Network.hpp>
+#include <meatengine/net/Replication.hpp>
 
 #include <meatengine/cmp/Transform.hpp>
 #include <meatengine/cmp/net/NetId.hpp>
@@ -69,22 +69,22 @@ void server_tick() {
         const std::size_t n = std::min(BATCH, candidates.size() - base);
 
         BinaryWriter body;
-        body.WriteUInt32(static_cast<uint32_t>(n));
+        body.write(static_cast<uint32_t>(n));
 
         for (std::size_t i = 0; i < n; ++i) {
             auto e = candidates[base + i].first;
             auto nid = reg.get<cmp::net::NetId>(e).value;
             auto mask = Replication::mask_for(reg, e);
 
-            body.WriteUInt32(nid);
-            body.WriteUInt64(mask);
+            body.write(nid);
+            body.write(mask);
             Replication::write_components(body, reg, e, mask);
         }
 
         Network::send(
             MsgType::EntitySnapshot,
             SendFlag::Unreliable,
-            body.GetBuffer()
+            body.buffer()
         );
     }
 
@@ -96,7 +96,7 @@ void server_tick() {
 
 void client_tick() {
     auto& reg = MainLoop::get_registry();
-    auto& c   = cache();
+    auto& c = cache();
     const float now = Network::now_ms() * 0.001f;
 
     std::vector<entt::entity> to_send;
@@ -123,14 +123,14 @@ void client_tick() {
     if (to_send.empty()) return;
 
     BinaryWriter body;
-    body.WriteUInt32(static_cast<uint32_t>(to_send.size()));
+    body.write(static_cast<uint32_t>(to_send.size()));
 
     for (auto e : to_send) {
         auto nid  = reg.get<cmp::net::NetId>(e).value;
         auto mask = Replication::mask_for(reg, e);
 
-        body.WriteUInt32(nid);
-        body.WriteUInt64(mask);
+        body.write(nid);
+        body.write(mask);
         Replication::write_components(body, reg, e, mask);
     }
 
@@ -138,7 +138,7 @@ void client_tick() {
         kServerPeerId,
         MsgType::EntitySnapshot,
         SendFlag::Unreliable,
-        body.GetBuffer()
+        body.buffer()
     );
 
     for (auto it = c.begin(); it != c.end(); ) {

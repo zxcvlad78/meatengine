@@ -1,4 +1,4 @@
-#include <meatengine/meatnet/Replication.hpp>
+#include <meatengine/net/Replication.hpp>
 
 namespace me::net {
 

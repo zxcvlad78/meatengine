@@ -1,4 +1,4 @@
-#include <meatengine/meatnet/Server.hpp>
+#include <meatengine/net/Server.hpp>
 #include <cassert>
 #include <cstdio>
 

@@ -1,8 +1,8 @@
 #pragma once
 #include <SFML/System/Vector2.hpp>
 
-#include <meatengine/meatnet/Replication.hpp>
-#include <meatengine/meatnet/Serialization.hpp>
+#include <meatengine/net/Replication.hpp>
+#include <meatengine/net/Serialization.hpp>
 
 namespace me::cmp {
     struct Transform {
@@ -30,26 +30,26 @@ namespace me::cmp {
     };
 
     inline void serialize(me::net::BinaryWriter& w, const Transform& t) {
-        w.WriteFloat(t.position.x);
-        w.WriteFloat(t.position.y);
-        w.WriteFloat(t.rotation.asRadians());
-        w.WriteFloat(t.scale.x);
-        w.WriteFloat(t.scale.y);
+        w.write(t.position.x);
+        w.write(t.position.y);
+        w.write(t.rotation.asRadians());
+        w.write(t.scale.x);
+        w.write(t.scale.y);
     }
 
     inline std::vector<uint8_t> serialize(Transform& t) {
         me::net::BinaryWriter w;
         serialize(w, t);
-        return w.GetBuffer();
+        return w.buffer();
     }
 
     inline bool deserialize(me::net::BinaryReader& r, Transform& out) {
         float x, y, rot, sx, sy;
-        if (!r.ReadFloat(x)) return false;
-        if (!r.ReadFloat(y)) return false;
-        if (!r.ReadFloat(rot)) return false;
-        if (!r.ReadFloat(sx)) return false;
-        if (!r.ReadFloat(sy)) return false;
+        if (!r.read(x)) return false;
+        if (!r.read(y)) return false;
+        if (!r.read(rot)) return false;
+        if (!r.read(sx)) return false;
+        if (!r.read(sy)) return false;
 
         out.position = {x, y};
         out.rotation = sf::radians(rot);
