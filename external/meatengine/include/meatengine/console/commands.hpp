@@ -126,7 +126,7 @@ namespace me::console_commands {
         //     "speed <float>"
         // );
         Console::get_instance().register_command(
-            "lua.run",
+            "lua",
             [](const std::vector<std::string>& args) {
                 //if (args.size() != 1) return;
                 try {
@@ -139,7 +139,6 @@ namespace me::console_commands {
                     else {
                         std::string total_string;
                         for(std::string s : args) total_string.append(s + " ");
-                        //total_string.erase(-1);
 
                         me::ScriptingServer::run_string(total_string);
                     }
@@ -147,8 +146,8 @@ namespace me::console_commands {
                     Console::get_instance().print_error(e.what());
                 }
             },
-            "Run lua script/string",
-            "(run script) lua.run <path::path/to/script.lua>\n(run string) lua.run <script string>"
+            "Run lua script",
+            "lua <script>"
         );
 
 
