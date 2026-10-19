@@ -4,7 +4,7 @@
 ### Features
 - **Lua scripting**
 - **Flexible modding**
-- **Low level networking (in dev)**
+- **Networking (in dev)**
 
 ### Linking with your project
 1. **Create a vcpkg.json file in the root directory of your project with the following content:**
