@@ -8,7 +8,7 @@ set(CMAKE_C_STANDARD 99)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
-add_subdirectory(meatengine)
+add_subdirectory(external/meatengine)
 
 file(GLOB_RECURSE SOURCES "src/*.cpp")
 
