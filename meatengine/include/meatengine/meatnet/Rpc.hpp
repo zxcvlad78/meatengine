@@ -80,6 +80,8 @@ public:
         send(target, 0u, name, rpc::pack(std::forward<Args>(args)...));
     }
 
+    static void broadcast(const std::string& name, const std::vector<std::uint8_t>& args);
+
     static std::uint32_t invoke_async(
         const std::string& name,
         std::function<void(BinaryReader&)> on_reply,

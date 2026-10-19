@@ -88,6 +88,32 @@ void Rpc::send(
     }
 }
 
+void Rpc::broadcast(const std::string& name, const std::vector<std::uint8_t>& args) {
+    if (Network::is_server()) {
+        auto it = handlers().find(name);
+        if (it == handlers().end()) {
+            std::printf("[Rpc] broadcast: no handler '%s' on server\n", name.c_str());
+            return;
+        }
+        try {
+            BinaryReader reader(args);
+            RpcContext ctx;
+            ctx.sender = kServerPeerId;
+            ctx.from_server = false;
+            ctx.request_id = 0;
+            it->second(ctx, reader);
+        } catch (const std::exception& e) {
+            std::printf("[Rpc] broadcast '%s' handler threw: %s\n", name.c_str(), e.what());
+        }
+    } else {
+        BinaryWriter w;
+        w.WriteUInt32(0);
+        w.WriteString(name);
+        if (!args.empty()) w.WriteBytes(args.data(), args.size());
+        Network::send(kServerPeerId, MsgType::RpcCall, SendFlag::Reliable, w.GetBuffer());
+    }
+}
+
 std::uint32_t Rpc::invoke_async(
     const std::string& name,
     std::function<void(BinaryReader&)> on_reply,

@@ -1,7 +1,7 @@
 Rpc.bind("core:play_audio", function(ctx, r)
-    local path = r:ReadString()
-    Rpc.invoke("core:echo_audio", path)
     if Network.is_server() then
+        local path = r:ReadString()
+        Rpc.invoke("core:echo_audio", path)
         SoundPlayer.play(ResourceLoader.load_SoundBuffer(path))
     end
 end)
@@ -15,17 +15,17 @@ local function send_chat_msg(text, sender)
     print("[Chat] " .. tostring(sender) .. ": " .. text)
 end
 
-Rpc.bind("core:chat", function(ctx, r)
+Rpc.bind("core:chat_receive_msg", function(ctx, r)
     local text = r:ReadString()
-    Rpc.invoke("core:echo_chat", text, ctx.sender)
-    if Network.is_server() then
-        send_chat_msg(text, ctx.sender)
-    end
+    local sender = r:ReadUInt32()
+    send_chat_msg(text, sender)
 end)
 
-Rpc.bind("core:echo_chat", function(ctx, r)
-    local text = r:ReadString()
-    local sender = r:ReadInt32()
-    send_chat_msg(text, sender)
+Rpc.bind("core:chat", function(ctx, r)
+    if Network.is_server() then
+        local text = r:ReadString()
+        Rpc.invoke("core:chat_receive_msg", text, ctx.sender)
+        send_chat_msg(text, ctx.sender)
+    end
 end)
 

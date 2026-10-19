@@ -14,28 +14,44 @@ using me::net::RpcContext;
 using me::net::BinaryReader;
 using me::net::BinaryWriter;
 
-void write_lua_value(BinaryWriter& w, const sol::object& v, const char* who) {
+void write_lua_value(BinaryWriter& w, const sol::object& v) {
     switch (v.get_type()) {
         case sol::type::number: {
             double d = v.as<double>();
-            if (std::isfinite(d) && d == std::floor(d) &&
-                d >= static_cast<double>(std::numeric_limits<int32_t>::min()) &&
-                d <= static_cast<double>(std::numeric_limits<int32_t>::max())) {
-                    w.WriteInt32(static_cast<int32_t>(d));
-                } else if (std::isfinite(d) && d == std::floor(d) && std::abs(d) < 9.0e18) {
-                    w.WriteInt64(static_cast<int64_t>(d));
-                } else {
-                    w.WriteFloat(static_cast<float>(d));
-                }
+            if (!std::isfinite(d)) {
+                w.WriteFloat(static_cast<float>(d));
+                return;
+            }
+
+            const bool is_integral = (d == std::floor(d));
+
+            if (is_integral && d >= 0.0 &&
+                d <= static_cast<double>(std::numeric_limits<uint32_t>::max())
+            ) {
+                w.WriteUInt32(static_cast<uint32_t>(d));
+                return;
+            }
+
+            if (is_integral &&
+                d >= static_cast<double>(std::numeric_limits<int32_t>::min()) && 
+                d < 0.0
+            ) {
+                w.WriteInt32(static_cast<int32_t>(d));
+                return; 
+            }
+
+            if (is_integral && std::abs(d) < 9.0e18) {
+                w.WriteInt64(static_cast<int64_t>(d));
+                return;
+            }
+
+            w.WriteFloat(static_cast<float>(d));
             return;
         }
         case sol::type::boolean: w.WriteBool(v.as<bool>()); return;
         case sol::type::string: w.WriteString(v.as<std::string>()); return;
         default:
-            throw std::runtime_error(
-                std::string(who) +
-                ": unsupported Lua type (only number, boolean, string)"
-            );
+            throw std::runtime_error("unsupported Lua type (only number, boolean, string)");
     }
 }
 
@@ -53,7 +69,7 @@ static void bind(sol::state& lua) {
     ctx_ut.set_function("reply",
         [](RpcContext& ctx, sol::variadic_args va) {
             BinaryWriter w;
-            for (auto v : va) write_lua_value(w, v, "RpcContext.reply");
+            for (auto v : va) write_lua_value(w, v);
             ctx.reply_payload = w.GetBuffer();
             ctx.has_reply = true;
         });
@@ -83,16 +99,23 @@ static void bind(sol::state& lua) {
     rpc.set_function("invoke",
         [](const std::string& name, sol::variadic_args va) {
             BinaryWriter w;
-            for (auto v : va) write_lua_value(w, v, "Rpc.invoke");
+            for (auto v : va) write_lua_value(w, v);
             me::net::Rpc::invoke(name, w.GetBuffer());
         });
 
     rpc.set_function("invoke_on",
         [](me::net::PeerId target, const std::string& name, sol::variadic_args va) {
             BinaryWriter w;
-            for (auto v : va) write_lua_value(w, v, "Rpc.invoke_to");
+            for (auto v : va) write_lua_value(w, v);
             me::net::Rpc::invoke(target, name, w.GetBuffer());
         });
+
+    rpc.set_function("broadcast",
+    [](const std::string& name, sol::variadic_args va) {
+        BinaryWriter w;
+        for (auto v : va) write_lua_value(w, v);
+        me::net::Rpc::broadcast(name, w.GetBuffer());
+    });
 
     rpc.set_function("invoke_async",
         [](const std::string& name,
@@ -102,7 +125,7 @@ static void bind(sol::state& lua) {
            sol::variadic_args va)
         {
             BinaryWriter w;
-            for (auto v : va) write_lua_value(w, v, "Rpc.invoke_async");
+            for (auto v : va) write_lua_value(w, v);
 
             me::net::Rpc::invoke_async(
                 name,
@@ -134,7 +157,7 @@ static void bind(sol::state& lua) {
             sol::variadic_args va
         ) {
             BinaryWriter w;
-            for (auto v : va) write_lua_value(w, v, "Rpc.invoke_on_async");
+            for (auto v : va) write_lua_value(w, v);
 
             me::net::Rpc::invoke_async(
                 target,
