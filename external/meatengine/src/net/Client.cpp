@@ -33,16 +33,17 @@ bool Client::Connect(const std::string& address) {
     }
 
     SteamNetworkingConfigValue_t opt;
-    opt.SetPtr(k_ESteamNetworkingConfig_Callback_ConnectionStatusChanged,
-               (void*)SteamNetConnectionStatusChangedCallback);
+    opt.SetPtr(k_ESteamNetworkingConfig_Callback_ConnectionStatusChanged, (void*)SteamNetConnectionStatusChangedCallback);
+
+    s_pCallbackInstance = this;
 
     m_hConnection = m_pInterface->ConnectByIPAddress(addr, 1, &opt);
     if (m_hConnection == k_HSteamNetConnection_Invalid) {
+        s_pCallbackInstance = nullptr;
         Log(LogLevel::Error, ("Failed to connect to " + address).c_str());
         return false;
     }
 
-    s_pCallbackInstance = this;
     Log(LogLevel::Msg, ("Connecting to " + address + "...").c_str());
     return true;
 }

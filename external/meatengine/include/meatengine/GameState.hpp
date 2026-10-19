@@ -13,4 +13,4 @@ public:
     virtual void on_exit(sf::RenderWindow& window, entt::registry& registry) = 0;
 };
 
-} // namespace me
+}

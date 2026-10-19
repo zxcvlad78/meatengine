@@ -49,4 +49,4 @@ bool Replication::skip_components(BinaryReader& r, std::uint64_t mask) {
     return true;
 }
 
-} // namespace me::net
+}

@@ -17,9 +17,6 @@ namespace me::cmp::ui {
     private:
         entt::resource<me::Font> _font{};
 
-        // Совмещает origin sf::Text с левым-верхним углом видимых глифов.
-        // Без этого b.position из getLocalBounds() смещает текст при
-        // align_self=Center и в обычном layout.
         void sync_origin() {
             if (!text) return;
             text->setOrigin(text->getLocalBounds().position);

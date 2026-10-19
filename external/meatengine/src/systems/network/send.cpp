@@ -44,14 +44,14 @@ void server_tick() {
     auto& c = cache();
     const float now = Network::now_ms() * 0.001f;
 
-    std::vector<std::pair<entt::entity, bool>> candidates;
+    std::vector<entt::entity> candidates;
     candidates.reserve(64);
 
     for (auto [e, t, nid] : reg.view<cmp::Transform, cmp::net::NetId>().each()) {
         auto it = c.find(e);
         if (it == c.end()) {
             c[e] = Entry{ t, now };
-            candidates.emplace_back(e, true);
+            candidates.push_back(e);
             continue;
         }
         bool changed = transform_changed(it->second.last, t);
@@ -59,7 +59,7 @@ void server_tick() {
         if (changed || keyframe) {
             it->second.last = t;
             it->second.last_sent = now;
-            candidates.emplace_back(e, changed);
+            candidates.push_back(e);
         }
     }
 
@@ -68,24 +68,18 @@ void server_tick() {
     for (std::size_t base = 0; base < candidates.size(); base += BATCH) {
         const std::size_t n = std::min(BATCH, candidates.size() - base);
 
-        BinaryWriter body;
-        body.write(static_cast<uint32_t>(n));
-
-        for (std::size_t i = 0; i < n; ++i) {
-            auto e = candidates[base + i].first;
-            auto nid = reg.get<cmp::net::NetId>(e).value;
-            auto mask = Replication::mask_for(reg, e);
-
-            body.write(nid);
-            body.write(mask);
-            Replication::write_components(body, reg, e, mask);
-        }
-
-        Network::send(
-            MsgType::EntitySnapshot,
-            SendFlag::Unreliable,
-            body.buffer()
-        );
+        Network::send(MsgType::EntitySnapshot, SendFlag::Unreliable,
+            [&](BinaryWriter& w) {
+                w.write(static_cast<uint32_t>(n));
+                for (std::size_t i = 0; i < n; ++i) {
+                    auto e = candidates[base + i];
+                    auto nid = reg.get<cmp::net::NetId>(e).value;
+                    auto mask = Replication::mask_for(reg, e);
+                    w.write(nid);
+                    w.write(mask);
+                    Replication::write_components(w, reg, e, mask);
+                }
+            });
     }
 
     for (auto it = c.begin(); it != c.end(); ) {
@@ -122,24 +116,17 @@ void client_tick() {
 
     if (to_send.empty()) return;
 
-    BinaryWriter body;
-    body.write(static_cast<uint32_t>(to_send.size()));
-
-    for (auto e : to_send) {
-        auto nid  = reg.get<cmp::net::NetId>(e).value;
-        auto mask = Replication::mask_for(reg, e);
-
-        body.write(nid);
-        body.write(mask);
-        Replication::write_components(body, reg, e, mask);
-    }
-
-    Network::send(
-        kServerPeerId,
-        MsgType::EntitySnapshot,
-        SendFlag::Unreliable,
-        body.buffer()
-    );
+    Network::send(kServerPeerId, MsgType::EntitySnapshot, SendFlag::Unreliable,
+        [&](BinaryWriter& w) {
+            w.write(static_cast<uint32_t>(to_send.size()));
+            for (auto e : to_send) {
+                auto nid  = reg.get<cmp::net::NetId>(e).value;
+                auto mask = Replication::mask_for(reg, e);
+                w.write(nid);
+                w.write(mask);
+                Replication::write_components(w, reg, e, mask);
+            }
+        });
 
     for (auto it = c.begin(); it != c.end(); ) {
         if (!reg.valid(it->first)) it = c.erase(it);

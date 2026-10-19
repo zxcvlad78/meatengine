@@ -22,4 +22,4 @@ namespace me::BBCode {
     };
 
     std::vector<TextFragment> parse(const std::string& input, unsigned int default_size = 16);
-} // namespace me::BBCode
+}

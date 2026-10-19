@@ -57,7 +57,7 @@ bool InitNetwork() {
         return false;
     }
 #else
-    SteamDatagram_SetAppID(570); // Set app id
+    SteamDatagram_SetAppID(0xFF); // Set app id
     SteamDatagram_SetUniverse(false, k_EUniverseDev);
 
     SteamDatagramErrMsg errMsg;

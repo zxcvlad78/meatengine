@@ -4,7 +4,6 @@
 
 namespace me::net {
 
-BinaryWriter::BinaryWriter() : m_buffer() {}
 BinaryWriter::BinaryWriter(size_t initial_capacity) {
     m_buffer.reserve(initial_capacity);
 }
@@ -82,6 +81,23 @@ void BinaryWriter::write(const void* data, size_t size) {
     if (size == 0) return;
     const uint8_t* bytes = static_cast<const uint8_t*>(data);
     m_buffer.insert(m_buffer.end(), bytes, bytes + size);
+}
+
+void BinaryWriter::patch_u8(size_t off, uint8_t v) {
+    if (off + 1 > m_buffer.size()) return;
+    m_buffer[off] = v;
+}
+
+void BinaryWriter::patch_u16(size_t off, uint16_t v) {
+    if (off + 2 > m_buffer.size()) return;
+    v = to_be(v);
+    std::memcpy(m_buffer.data() + off, &v, 2);
+}
+
+void BinaryWriter::patch_u32(size_t off, uint32_t v) {
+    if (off + 4 > m_buffer.size()) return;
+    v = to_be(v);
+    std::memcpy(m_buffer.data() + off, &v, 4);
 }
 
 BinaryReader::BinaryReader(const uint8_t* data, size_t size)

@@ -37,7 +37,7 @@ static inline uint64_t from_be(uint64_t v) { return swap64(v); }
 
 class BinaryWriter {
 public:
-    BinaryWriter();
+    BinaryWriter() = default;
     explicit BinaryWriter(size_t initial_capacity);
 
     void write(int8_t v);
@@ -56,6 +56,12 @@ public:
     void write(const std::vector<uint8_t>& v);
 
     void write(const void* data, size_t size); // write raw data
+
+    void patch_u8(size_t off, uint8_t v);
+    void patch_u16(size_t off, uint16_t v);
+    void patch_u32(size_t off, uint32_t v);
+
+    void reserve_front(size_t n) { m_buffer.resize(n, 0); }
 
     const std::vector<std::uint8_t>& buffer() const& { return m_buffer; }
     std::vector<std::uint8_t> buffer() && { return std::move(m_buffer); }

@@ -32,11 +32,13 @@ bool Server::Start(uint16_t port) {
     localAddr.m_port = port;
 
     SteamNetworkingConfigValue_t opt;
-    opt.SetPtr(k_ESteamNetworkingConfig_Callback_ConnectionStatusChanged,
-               (void*)SteamNetConnectionStatusChangedCallback);
+    opt.SetPtr(k_ESteamNetworkingConfig_Callback_ConnectionStatusChanged, (void*)SteamNetConnectionStatusChangedCallback);
+    
+    s_pCallbackInstance = this;
 
     m_hListenSocket = m_pInterface->CreateListenSocketIP(localAddr, 1, &opt);
     if (m_hListenSocket == k_HSteamListenSocket_Invalid) {
+        s_pCallbackInstance = nullptr;
         Log(LogLevel::Error, "Failed to create listen socket");
         return false;
     }
@@ -46,11 +48,11 @@ bool Server::Start(uint16_t port) {
         Log(LogLevel::Error, "Failed to create poll group");
         m_pInterface->CloseListenSocket(m_hListenSocket);
         m_hListenSocket = k_HSteamListenSocket_Invalid;
+        s_pCallbackInstance = nullptr;
         return false;
     }
 
     m_running = true;
-    s_pCallbackInstance = this;
     Log(LogLevel::Msg, ("Server started on port " + std::to_string(port)).c_str());
     return true;
 }
@@ -97,12 +99,14 @@ bool Server::SendToClient(ConnectionID client, const void* data, uint32_t size, 
 }
 
 void Server::Broadcast(const void* data, uint32_t size, ConnectionID exclude, bool reliable) {
-    std::lock_guard<std::mutex> lock(m_clientMutex);
-    for (auto& pair : m_clients) {
-        if (pair.first != exclude) {
-            SendToClient(pair.first, data, size, reliable);
-        }
+    std::vector<ConnectionID> ids;
+    {
+        std::lock_guard<std::mutex> lock(m_clientMutex);
+        ids.reserve(m_clients.size());
+        for (auto& [id, _] : m_clients)
+            if (id != exclude) ids.push_back(id);
     }
+    for (auto id : ids) SendToClient(id, data, size, reliable);
 }
 
 void Server::Kick(ConnectionID client, const char* reason) {

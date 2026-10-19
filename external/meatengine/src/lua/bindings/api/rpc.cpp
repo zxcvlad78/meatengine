@@ -1,6 +1,7 @@
 #include <meatengine/lua/LuaBinder.hpp>
 #include <meatengine/net/Rpc.hpp>
 #include <meatengine/net/Serialization.hpp>
+#include <meatengine/net/Network.hpp>
 
 #include <cmath>
 #include <iostream>
@@ -26,18 +27,18 @@ void write_lua_value(BinaryWriter& w, const sol::object& v) {
             const bool is_integral = (d == std::floor(d));
 
             if (is_integral && d >= 0.0 &&
-                d <= static_cast<double>(std::numeric_limits<uint32_t>::max())
-            ) {
+                d <= static_cast<double>(std::numeric_limits<uint32_t>::max()))
+            {
                 w.write(static_cast<uint32_t>(d));
                 return;
             }
 
             if (is_integral &&
-                d >= static_cast<double>(std::numeric_limits<int32_t>::min()) && 
-                d < 0.0
-            ) {
+                d >= static_cast<double>(std::numeric_limits<int32_t>::min()) &&
+                d < 0.0)
+            {
                 w.write(static_cast<int32_t>(d));
-                return; 
+                return;
             }
 
             if (is_integral && std::abs(d) < 9.0e18) {
@@ -49,7 +50,12 @@ void write_lua_value(BinaryWriter& w, const sol::object& v) {
             return;
         }
         case sol::type::boolean: w.write(v.as<bool>()); return;
-        case sol::type::string: w.write(v.as<std::string>()); return;
+        case sol::type::string: {
+            std::string_view sv = v.as<std::string_view>();
+            w.write(static_cast<uint32_t>(sv.size()));
+            if (!sv.empty()) w.write(sv.data(), sv.size());
+            return;
+        }
         default:
             throw std::runtime_error("unsupported Lua type (only int, float, bool, string)");
     }
@@ -70,7 +76,7 @@ static void bind(sol::state& lua) {
         [](RpcContext& ctx, sol::variadic_args va) {
             BinaryWriter w;
             for (auto v : va) write_lua_value(w, v);
-            ctx.reply_payload = w.buffer();
+            ctx.reply_payload = std::move(w).buffer();
             ctx.has_reply = true;
         });
 
@@ -89,32 +95,42 @@ static void bind(sol::state& lua) {
                     auto res = fn(&ctx, &r);
                     if (!res.valid()) {
                         sol::error e = res;
-                        std::cerr <<
-                            "[Rpc.bind '" << name << "'] "
-                        << e.what() << "\n";
+                        std::cerr << "[Rpc.bind '" << name << "'] "
+                                  << e.what() << "\n";
                     }
                 });
         });
 
     rpc.set_function("invoke",
         [](const std::string& name, sol::variadic_args va) {
-            BinaryWriter w;
-            for (auto v : va) write_lua_value(w, v);
-            me::net::Rpc::invoke(name, w.buffer());
+            me::net::Network::send(
+                me::net::MsgType::RpcCall,
+                me::net::SendFlag::Reliable,
+                [&](BinaryWriter& w) {
+                    w.write(static_cast<std::uint32_t>(0));
+                    w.write(name);
+                    for (auto v : va) write_lua_value(w, v);
+                });
         });
 
     rpc.set_function("invoke_on",
         [](me::net::PeerId target, const std::string& name, sol::variadic_args va) {
-            BinaryWriter w;
-            for (auto v : va) write_lua_value(w, v);
-            me::net::Rpc::invoke(target, name, w.buffer());
+            me::net::Network::send(
+                target,
+                me::net::MsgType::RpcCall,
+                me::net::SendFlag::Reliable,
+                [&](BinaryWriter& w) {
+                    w.write(static_cast<std::uint32_t>(0));
+                    w.write(name);
+                    for (auto v : va) write_lua_value(w, v);
+                });
         });
 
-    rpc.set_function("broadcast",
-    [](const std::string& name, sol::variadic_args va) {
-        BinaryWriter w;
-        for (auto v : va) write_lua_value(w, v);
-        me::net::Rpc::broadcast(name, w.buffer());
+    rpc.set_function("broadcast", [](const std::string& name, sol::variadic_args va) {
+        me::net::Rpc::broadcast(name,
+            [&](BinaryWriter& w) {
+                for (auto v : va) write_lua_value(w, v);
+            });
     });
 
     rpc.set_function("invoke_async",
@@ -122,8 +138,8 @@ static void bind(sol::state& lua) {
            sol::protected_function on_reply,
            sol::protected_function on_timeout,
            float timeout_sec,
-           sol::variadic_args va)
-        {
+           sol::variadic_args va
+        ) {
             BinaryWriter w;
             for (auto v : va) write_lua_value(w, v);
 
@@ -143,18 +159,18 @@ static void bind(sol::state& lua) {
                         std::cerr << "[Rpc.timeout] " << e.what() << "\n";
                     }
                 },
-                w.buffer(),
+                std::move(w).buffer(),
                 timeout_sec);
-        });
+        }
+    );
 
     rpc.set_function("invoke_on_async",
-        [](
-            me::net::PeerId target,
-            const std::string& name,
-            sol::protected_function on_reply,
-            sol::protected_function on_timeout,
-            float timeout_sec,
-            sol::variadic_args va
+        [](me::net::PeerId target,
+           const std::string& name,
+           sol::protected_function on_reply,
+           sol::protected_function on_timeout,
+           float timeout_sec,
+           sol::variadic_args va
         ) {
             BinaryWriter w;
             for (auto v : va) write_lua_value(w, v);
@@ -176,12 +192,12 @@ static void bind(sol::state& lua) {
                         std::cerr << "[Rpc.timeout] " << e.what() << "\n";
                     }
                 },
-                w.buffer(),
+                std::move(w).buffer(),
                 timeout_sec);
-        });
+        }
+    );
 
-    rpc.set_function("has",
-        [](const std::string& name) { return me::net::Rpc::has(name); });
+    rpc.set_function("has", [](const std::string& name) { return me::net::Rpc::has(name); });
 }
 
 ME_LUA_BINDING(

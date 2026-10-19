@@ -50,4 +50,4 @@ struct ClientInfo {
     // Custom data
 };
 
-} // namespace MeatNet
+}

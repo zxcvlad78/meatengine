@@ -49,8 +49,38 @@ public:
     static void set_peer_address(PeerId id, const std::string& address);
     static void set_peer_latency(PeerId id, float ms);
 
-    static void send(PeerId target, MsgType type, SendFlag flag, const std::vector<uint8_t>& payload);
-    static void send(MsgType type, SendFlag flag, const std::vector<uint8_t>& payload, PeerId except = kInvalidPeerId);
+    template<typename F>
+    static void send(PeerId target, MsgType type, SendFlag flag, F&& write) {
+        BinaryWriter w;
+        w.reserve_front(kEnvelopeSize);
+        write(w);
+        finish_and_send(w, target, type, flag);
+    }
+    template<typename F>
+    static void send(MsgType type, SendFlag flag, F&& write, PeerId except = kInvalidPeerId) {
+        BinaryWriter w;
+        w.reserve_front(kEnvelopeSize);
+        write(w);
+        finish_and_send(w, type, flag, except);
+    }
+
+    static void send(PeerId target, MsgType type, SendFlag flag, const std::vector<std::uint8_t>& payload) {
+        send(target, type, flag, [&](BinaryWriter& w) {
+            if (!payload.empty()) w.write(payload.data(), payload.size());
+        });
+    }
+
+    static void send(
+        MsgType type,
+        SendFlag flag,
+        const std::vector<std::uint8_t>& payload,
+        PeerId except = kInvalidPeerId
+    ) {
+        send(type, flag, [&payload](BinaryWriter& w) {
+            if (!payload.empty()) w.write(payload.data(), payload.size());
+        },
+        except);
+    }
 
     static void handle_message(ConnectionID from_conn, const std::uint8_t* data, std::uint32_t size);
 
@@ -66,6 +96,11 @@ public:
     static bool get_auto_cleanup_owned();
 
 private:
+    static constexpr std::size_t kEnvelopeSize = 8;
+
+    static void finish_and_send(BinaryWriter& w, PeerId target, MsgType type, SendFlag flag);
+    static void finish_and_send(BinaryWriter& w, MsgType type, SendFlag flag, PeerId except);
+
     inline static std::unordered_map<uint64_t, entt::entity> _nid_map;
     inline static std::unordered_map<entt::entity, uint64_t> _entity_map;
     inline static std::unordered_map<PeerId, PeerInfo> _peers;

@@ -1,4 +1,5 @@
 #pragma once
+
 #include <functional>
 #include <string>
 #include <unordered_map>
@@ -6,38 +7,9 @@
 
 #include <meatengine/net/Serialization.hpp>
 #include <meatengine/net/Protocol.hpp>
+#include <meatengine/net/Network.hpp>
 
 namespace me::net {
-
-namespace rpc {
-    namespace detail {
-        template<typename T>
-        using bare_t = std::remove_cv_t<std::remove_reference_t<T>>;
-
-        template<typename T>
-        inline constexpr bool is_packable_v =
-            std::is_arithmetic_v<bare_t<T>> ||
-            std::is_same_v<bare_t<T>, std::string> ||
-            std::is_same_v<std::decay_t<T>, std::vector<std::uint8_t>> ||
-            std::is_convertible_v<std::decay_t<T>, const char*>;
-
-        template<typename... Args>
-        inline constexpr bool all_packable_v = (is_packable_v<Args> && ...);
-    }
-
-    template<typename... Args>
-    std::vector<std::uint8_t> pack(Args&&... args) {
-        static_assert(
-            detail::all_packable_v<Args...>,
-            "rpc::pack(): supported types are arithmetic, std::string, "
-            "const char*, and std::vector<std::uint8_t>"
-        );
-
-        BinaryWriter w;
-        (w.write(std::forward<Args>(args)), ...);
-        return w.buffer();
-    }
-}
 
 struct RpcContext {
     PeerId sender = kInvalidPeerId;
@@ -49,7 +21,9 @@ struct RpcContext {
 
     template<typename... Args>
     void reply(Args&&... args) {
-        reply_payload = rpc::pack(std::forward<Args>(args)...);
+        BinaryWriter w;
+        (w.write(std::forward<Args>(args)), ...);
+        reply_payload = std::move(w).buffer();
         has_reply = true;
     }
 
@@ -75,24 +49,49 @@ public:
     static bool has(const std::string& name);
 
     template<typename... Args>
-    inline static void invoke(const std::string& name, Args&&... args) {
-        send(0u, name, rpc::pack(std::forward<Args>(args)...));
+    static void invoke(const std::string& name, Args&&... args) {
+        send_call(kServerPeerId, 0u, name, [&](BinaryWriter& w) {
+            (w.write(std::forward<Args>(args)), ...);
+        });
     }
 
     template<typename... Args>
-    inline static void invoke(PeerId target, const std::string& name, Args&&... args) {
-        send(target, 0u, name, rpc::pack(std::forward<Args>(args)...));
+    static void invoke(PeerId target, const std::string& name, Args&&... args) {
+        send_call(target, 0u, name, [&](BinaryWriter& w) {
+            (w.write(std::forward<Args>(args)), ...);
+        });
     }
 
-    static void broadcast(const std::string& name, const std::vector<std::uint8_t>& args);
+    template<typename F>
+    static void broadcast(const std::string& name, F&& write_args) {
+        BinaryWriter args_w;
+        write_args(args_w);
+        auto args_payload = std::move(args_w).buffer();
+
+        if (Network::is_server())
+            run_local_handler(name, args_payload);
+
+        Network::send(MsgType::RpcCall, SendFlag::Reliable,
+            [&name, &args_payload](BinaryWriter& w) {
+                w.write(static_cast<std::uint32_t>(0));
+                w.write(name);
+                if (!args_payload.empty())
+                    w.write(args_payload.data(), args_payload.size());
+            });
+    }
+
+    static void broadcast(const std::string& name, const std::vector<std::uint8_t>& args) {
+        broadcast(name, [&args](BinaryWriter& w) {
+            if (!args.empty()) w.write(args.data(), args.size());
+        });
+    }
 
     static std::uint32_t invoke_async(
         const std::string& name,
         std::function<void(BinaryReader&)> on_reply,
         std::function<void()> on_timeout,
         std::vector<std::uint8_t> args,
-        float timeout_sec = 5.f
-    );
+        float timeout_sec = 5.f);
 
     static std::uint32_t invoke_async(
         PeerId target,
@@ -100,8 +99,7 @@ public:
         std::function<void(BinaryReader&)> on_reply,
         std::function<void()> on_timeout,
         std::vector<std::uint8_t> args,
-        float timeout_sec = 5.f
-    );
+        float timeout_sec = 5.f);
 
     static void handle_call(PeerId sender, bool on_server, BinaryReader& r);
     static void handle_reply(BinaryReader& r);
@@ -110,23 +108,22 @@ public:
     static void clear();
 
 private:
-    static std::uint32_t next_request_id();
+    template<typename F>
+    static void send_call(PeerId target, std::uint32_t rid, const std::string& name, F&& write) {
+        Network::send(target, MsgType::RpcCall, SendFlag::Reliable,
+            [&](BinaryWriter& w) {
+                w.write(rid);
+                w.write(name);
+                write(w);
+            });
+    }
 
-    static void send(
-        PeerId target,
-        std::uint32_t rid,
-        const std::string& name,
-        const std::vector<std::uint8_t>& args
-    );
-    static void send(
-        std::uint32_t rid,
-        const std::string& name,
-        const std::vector<std::uint8_t>& args
-    );
+    static void run_local_handler(const std::string& name, const std::vector<std::uint8_t>& args);
 
     static std::unordered_map<std::string, RpcHandler>& handlers();
     static std::unordered_map<std::uint32_t, PendingRpc>& pending();
 
+    static std::uint32_t next_request_id();
     inline static std::uint32_t _next_id = 1;
 };
 

@@ -162,6 +162,45 @@ void Network::set_on_peer_disconnected(PeerEventCallback cb) {
 void Network::set_auto_cleanup_owned(bool v) { auto_cleanup_owned_flag() = v; }
 bool Network::get_auto_cleanup_owned() { return auto_cleanup_owned_flag(); }
 
+static void patch_header(BinaryWriter& w, MsgType type, SendFlag flag, std::uint32_t seq) {
+    const std::uint32_t plen = static_cast<std::uint32_t>(w.buffer().size() - 8);
+    if (plen > 0xFFFFu)
+        throw std::runtime_error("[Network] payload exceeds 64KB");
+    w.patch_u8 (0, static_cast<std::uint8_t>(type));
+    w.patch_u8 (1, static_cast<std::uint8_t>(flag));
+    w.patch_u32(2, seq);
+    w.patch_u16(6, static_cast<std::uint16_t>(plen));
+}
+
+void Network::finish_and_send(BinaryWriter& w, PeerId target, MsgType type, SendFlag flag) {
+    patch_header(w, type, flag, _seq_counter++);
+    const auto* d = w.buffer().data();
+    const auto  n = static_cast<std::uint32_t>(w.buffer().size());
+
+    if (_server) {
+        auto conn = conn_of(target);
+        if (conn == k_HSteamNetConnection_Invalid) return;
+        _server->SendToClient(conn, d, n, flag == SendFlag::Reliable);
+    } else if (_client && target == kServerPeerId) {
+        _client->Send(d, n, flag == SendFlag::Reliable);
+    }
+}
+
+void Network::finish_and_send(BinaryWriter& w, MsgType type, SendFlag flag, PeerId except) {
+    patch_header(w, type, flag, _seq_counter++);
+    const auto* d = w.buffer().data();
+    const auto  n = static_cast<std::uint32_t>(w.buffer().size());
+
+    if (_server) {
+        auto ex = (except == kInvalidPeerId)
+            ? k_HSteamNetConnection_Invalid
+            : conn_of(except);
+        _server->Broadcast(d, n, ex, flag == SendFlag::Reliable);
+    } else if (_client) {
+        _client->Send(d, n, flag == SendFlag::Reliable);
+    }
+}
+
 entt::entity Network::spawn_entity(const std::string& packed_id, PeerId owner) {
     if (!_server) return entt::null;
 
@@ -177,7 +216,14 @@ entt::entity Network::spawn_entity(const std::string& packed_id, PeerId owner) {
     assign(nid, e);
     packed_ids()[nid] = packed_id;
 
-    send_entity_spawn(nid, owner, packed_id, kInvalidPeerId);
+    send(MsgType::EntitySpawn, SendFlag::Reliable,
+        [nid, owner, &packed_id](BinaryWriter& w) {
+            w.write(nid);
+            w.write(owner);
+            w.write(packed_id);
+        }
+    );
+
     return e;
 }
 
@@ -191,11 +237,8 @@ void Network::despawn_entity(entt::entity e) {
     if (auto* n = reg.try_get<me::cmp::net::NetId>(e))
         nid = n->value;
 
-    if (nid != 0) {
-        BinaryWriter w;
-        w.write(nid);
-        send(MsgType::EntityDespawn, SendFlag::Reliable, w.buffer());
-    }
+    if (nid != 0)
+        send(MsgType::EntityDespawn, SendFlag::Reliable, [nid](BinaryWriter& w) { w.write(nid); });
 
     reg.destroy(e);
     if (nid != 0) remove(nid);
@@ -210,10 +253,11 @@ void Network::set_authority(entt::entity e, PeerId owner) {
     reg.emplace_or_replace<me::cmp::net::Authority>(e, me::cmp::net::Authority{owner});
 
     std::uint32_t nid = reg.get<me::cmp::net::NetId>(e).value;
-    BinaryWriter w;
-    w.write(nid);
-    w.write(owner);
-    send(MsgType::EntityAuthority, SendFlag::Reliable, w.buffer());
+    send(MsgType::EntityAuthority, SendFlag::Reliable,
+        [nid, owner](BinaryWriter& w) {
+            w.write(nid);
+            w.write(owner);
+        });
 }
 
 void Network::set_peer_address(PeerId id, const std::string& addr) {
@@ -337,60 +381,6 @@ bool Network::peer(PeerId id, PeerInfo& out) {
 
 void Network::remove_peer(PeerId id) { _peers.erase(id); }
 
-void Network::send(
-    PeerId target,
-    MsgType type,
-    SendFlag flag,
-    const std::vector<uint8_t>& payload
-) {
-    BinaryWriter w;
-    write_envelope(w, type, flag, _seq_counter++, payload);
-
-    if (_server) {
-        ConnectionID conn = conn_of(target);
-        if (conn == k_HSteamNetConnection_Invalid) return;
-        _server->SendToClient(
-            conn,
-            w.buffer().data(),
-            static_cast<uint32_t>(w.buffer().size()),
-            flag == SendFlag::Reliable
-        );
-    } else if (_client && target == kServerPeerId) {
-        _client->Send(
-            w.buffer().data(),
-            static_cast<uint32_t>(w.buffer().size()),
-            flag == SendFlag::Reliable
-        );
-    }
-}
-
-void Network::send(
-    MsgType type,
-    SendFlag flag,
-    const std::vector<uint8_t>& payload,
-    PeerId except
-) {
-    BinaryWriter w;
-    write_envelope(w, type, flag, _seq_counter++, payload);
-
-    if (_server) {
-        ConnectionID ex_conn = (except == kInvalidPeerId)
-            ? k_HSteamNetConnection_Invalid
-            : conn_of(except);
-        _server->Broadcast(
-            w.buffer().data(),
-            static_cast<uint32_t>(w.buffer().size()),
-            ex_conn,
-            flag == SendFlag::Reliable
-        );
-    } else if (_client) {
-        _client->Send(
-            w.buffer().data(),
-            static_cast<uint32_t>(w.buffer().size()),
-            flag == SendFlag::Reliable
-        );
-    }
-}
 
 void Network::handle_message(
     ConnectionID from_conn,
@@ -406,226 +396,213 @@ void Network::handle_message(
     const PeerId sender = on_server ? peer_of_conn(from_conn) : kServerPeerId;
 
     switch (env.type) {
-
-    case MsgType::Handshake: {
-        if (on_server) {
-            uint32_t proto = 0;
-            if (!r.read(proto)) return;
-            if (proto != kProtocolVersion) {
-                std::printf("[Network][Server] protocol mismatch conn=%u\n", from_conn);
-                _server->Kick(from_conn, "protocol mismatch");
-                return;
-            }
-
-            PeerId pid = next_peer_id();
-            _peers[pid] = PeerInfo{ from_conn, "", 0.f };
-
-            {
-                BinaryWriter w;
-                w.write(pid);
-                w.write(kProtocolVersion);
-                send(pid, MsgType::Handshake, SendFlag::Reliable, w.buffer());
-            }
-            
-            {
-                BinaryWriter w;
-                w.write(pid);
-                send(MsgType::PeerConnected, SendFlag::Reliable, w.buffer(), pid);
-            }
-            
-            for (auto& [id, info] : _peers) {
-                if (id == pid) continue;
-                BinaryWriter w;
-                w.write(id);
-                send(pid, MsgType::PeerConnected, SendFlag::Reliable, w.buffer());
-            }
-
-            for (auto& [nid, packed_id_str] : packed_ids()) {
-                auto e = resolve(nid);
-                if (e == entt::null) continue;
-                auto& reg = MainLoop::get_registry();
-                auto* a = reg.try_get<me::cmp::net::Authority>(e);
-                PeerId owner = a ? a->id : kServerPeerId;
-                send_entity_spawn(pid, nid, owner, packed_id_str);
-            }
-
-            safe_callback(on_peer_connected_cb(), pid, "peer_connected");
-
-            std::printf("[Network][Server] peer %u joined\n", pid);
-        }
-        else {
-            uint32_t pid = 0, proto = 0;
-            if (!r.read(pid))   return;
-            if (!r.read(proto)) return;
-            if (proto != kProtocolVersion) {
-                std::printf("[Network][Client] protocol mismatch\n");
-                disconnect();
-                return;
-            }
-            _peer_id = pid;
-            std::printf("[Network][Client] assigned peer id %u\n", pid);
-        }
-        break;
-    }
-
-    case MsgType::PeerConnected: {
-        if (on_server) return;
-        uint32_t pid = 0;
-        if (!r.read(pid)) return;
-        _peers.emplace(pid, PeerInfo{});
-        printf("[Network][Client] peer %u connected\n", pid);
-        break;
-    }
-
-    case MsgType::PeerDisconnected: {
-        if (on_server) return;
-        uint32_t pid = 0;
-        if (!r.read(pid)) return;
-        _peers.erase(pid);
-        printf("[Network][Client] peer %u left\n", pid);
-        break;
-    }
-
-    case MsgType::EntitySpawn: {
-        if (on_server) return;
-        uint32_t nid = 0, owner = 0;
-        std::string packed_id;
-        if (!r.read(nid)) return;
-        if (!r.read(owner)) return;
-        if (!r.read(packed_id)) return;
-
-        if (resolve(nid) != entt::null) {
-            auto& reg = MainLoop::get_registry();
-            auto e = resolve(nid);
-            if (reg.valid(e))
-                reg.emplace_or_replace<me::cmp::net::Authority>(e, me::cmp::net::Authority{owner});
-            return;
-        }
-
-        auto& reg = MainLoop::get_registry();
-        auto e = PackedEntity::spawn(packed_id, reg);
-        if (e == entt::null) {
-            printf("[Network][Client] EntitySpawn: unknown '%s'\n", packed_id.c_str());
-            return;
-        }
-
-        reg.emplace_or_replace<me::cmp::net::NetId>(e).value = nid;
-        reg.emplace_or_replace<me::cmp::net::Authority>(e).id = owner;
-        assign(nid, e);
-
-        break;
-    }
-
-    case MsgType::EntityDespawn: {
-        if (on_server) return;
-        uint32_t nid = 0;
-        if (!r.read(nid)) return;
-        auto e = resolve(nid);
-        if (e == entt::null) return;
-        auto& reg = MainLoop::get_registry();
-        if (reg.valid(e)) reg.destroy(e);
-        remove(nid);
-        break;
-    }
-
-    case MsgType::EntitySnapshot: {
-        uint32_t count = 0;
-        if (!r.read(count)) return;
-
-        auto& reg = MainLoop::get_registry();
-        for (uint32_t i = 0; i < count; ++i) {
-            uint32_t nid  = 0;
-            uint64_t mask = 0;
-            if (!r.read(nid))  return;
-            if (!r.read(mask)) return;
-
-            auto e = resolve(nid);
-
-            if (e == entt::null || !reg.valid(e)) {
-                if (!Replication::skip_components(r, mask)) return;
-                continue;
-            }
-
+        case MsgType::Handshake: {
             if (on_server) {
-                auto* a = reg.try_get<me::cmp::net::Authority>(e);
-                if (!a || a->id != sender) {
+                uint32_t proto = 0;
+                if (!r.read(proto)) return;
+                if (proto != kProtocolVersion) {
+                    std::printf("[Network][Server] protocol mismatch conn=%u\n", from_conn);
+                    _server->Kick(from_conn, "protocol mismatch");
+                    return;
+                }
+
+                PeerId pid = next_peer_id();
+                _peers[pid] = PeerInfo{ from_conn, "", 0.f };
+
+                send(pid, MsgType::Handshake, SendFlag::Reliable,
+                    [pid](BinaryWriter& w) {
+                        w.write(pid);
+                        w.write(kProtocolVersion);
+                    });
+
+                send(MsgType::PeerConnected, SendFlag::Reliable,
+                    [pid](BinaryWriter& w) { w.write(pid); }, pid);
+
+                for (auto& [id, info] : _peers) {
+                    if (id == pid) continue;
+                    send(pid, MsgType::PeerConnected, SendFlag::Reliable,
+                        [id](BinaryWriter& w) { w.write(id); });
+                }
+
+                for (auto& [nid, packed_id_str] : packed_ids()) {
+                    auto e = resolve(nid);
+                    if (e == entt::null) continue;
+                    auto& reg = MainLoop::get_registry();
+                    auto* a = reg.try_get<me::cmp::net::Authority>(e);
+                    PeerId owner = a ? a->id : kServerPeerId;
+                    send(pid, MsgType::EntitySpawn, SendFlag::Reliable,
+                        [nid, owner, &packed_id_str](BinaryWriter& w) {
+                            w.write(nid);
+                            w.write(owner);
+                            w.write(packed_id_str);
+                        });
+                }
+
+                safe_callback(on_peer_connected_cb(), pid, "peer_connected");
+                std::printf("[Network][Server] peer %u joined\n", pid);
+            }
+            else {
+                uint32_t pid = 0, proto = 0;
+                if (!r.read(pid))   return;
+                if (!r.read(proto)) return;
+                if (proto != kProtocolVersion) {
+                    std::printf("[Network][Client] protocol mismatch\n");
+                    disconnect();
+                    return;
+                }
+                _peer_id = pid;
+                std::printf("[Network][Client] assigned peer id %u\n", pid);
+            }
+            break;
+        }
+
+        case MsgType::PeerConnected: {
+            if (on_server) return;
+            uint32_t pid = 0;
+            if (!r.read(pid)) return;
+            _peers.emplace(pid, PeerInfo{});
+            std::printf("[Network][Client] peer %u connected\n", pid);
+            break;
+        }
+
+        case MsgType::PeerDisconnected: {
+            if (on_server) return;
+            uint32_t pid = 0;
+            if (!r.read(pid)) return;
+            _peers.erase(pid);
+            std::printf("[Network][Client] peer %u left\n", pid);
+            break;
+        }
+
+        case MsgType::EntitySpawn: {
+            if (on_server) return;
+            uint32_t nid = 0, owner = 0;
+            std::string packed_id;
+            if (!r.read(nid))       return;
+            if (!r.read(owner))     return;
+            if (!r.read(packed_id)) return;
+
+            if (resolve(nid) != entt::null) {
+                auto& reg = MainLoop::get_registry();
+                auto e = resolve(nid);
+                if (reg.valid(e))
+                    reg.emplace_or_replace<me::cmp::net::Authority>(e, me::cmp::net::Authority{owner});
+                return;
+            }
+
+            auto& reg = MainLoop::get_registry();
+            auto e = PackedEntity::spawn(packed_id, reg);
+            if (e == entt::null) {
+                std::printf("[Network][Client] EntitySpawn: unknown '%s'\n", packed_id.c_str());
+                return;
+            }
+
+            reg.emplace_or_replace<me::cmp::net::NetId>(e).value = nid;
+            reg.emplace_or_replace<me::cmp::net::Authority>(e).id = owner;
+            assign(nid, e);
+            break;
+        }
+
+        case MsgType::EntityDespawn: {
+            if (on_server) return;
+            uint32_t nid = 0;
+            if (!r.read(nid)) return;
+            auto e = resolve(nid);
+            if (e == entt::null) return;
+            auto& reg = MainLoop::get_registry();
+            if (reg.valid(e)) reg.destroy(e);
+            remove(nid);
+            break;
+        }
+
+        case MsgType::EntitySnapshot: {
+            uint32_t count = 0;
+            if (!r.read(count)) return;
+
+            auto& reg = MainLoop::get_registry();
+            for (uint32_t i = 0; i < count; ++i) {
+                uint32_t nid  = 0;
+                uint64_t mask = 0;
+                if (!r.read(nid))  return;
+                if (!r.read(mask)) return;
+
+                auto e = resolve(nid);
+
+                if (e == entt::null || !reg.valid(e)) {
                     if (!Replication::skip_components(r, mask)) return;
                     continue;
                 }
+
+                if (on_server) {
+                    auto* a = reg.try_get<me::cmp::net::Authority>(e);
+                    if (!a || a->id != sender) {
+                        if (!Replication::skip_components(r, mask)) return;
+                        continue;
+                    }
+                }
+
+                if (!on_server && is_authority(e)) {
+                    if (!Replication::skip_components(r, mask)) return;
+                    continue;
+                }
+
+                if (!Replication::read_components(r, reg, e, mask)) return;
             }
+            break;
+        }
 
-            if (!on_server && is_authority(e)) {
-                if (!Replication::skip_components(r, mask)) return;
-                continue;
+        case MsgType::EntityAuthority: {
+            uint32_t nid = 0, new_owner = 0;
+            if (!r.read(nid))       return;
+            if (!r.read(new_owner)) return;
+
+            auto e = resolve(nid);
+            if (e == entt::null) return;
+
+            auto& reg = MainLoop::get_registry();
+            if (reg.valid(e))
+                reg.emplace_or_replace<me::cmp::net::Authority>(e).id = new_owner;
+            break;
+        }
+
+        case MsgType::RpcCall: {
+            Rpc::handle_call(sender, on_server, r);
+            break;
+        }
+        case MsgType::RpcReply: {
+            Rpc::handle_reply(r);
+            break;
+        }
+
+        case MsgType::Ping: {
+            uint32_t stamp = 0;
+            if (!r.read(stamp)) return;
+
+            auto write_pong = [stamp](BinaryWriter& w) { w.write(stamp); };
+
+            if (on_server) {
+                if (sender != kInvalidPeerId)
+                    send(sender, MsgType::Pong, SendFlag::UnreliableNoNagle, write_pong);
+            } else {
+                send(kServerPeerId, MsgType::Pong, SendFlag::UnreliableNoNagle, write_pong);
             }
-
-            if (!Replication::read_components(r, reg, e, mask)) return;
+            break;
         }
-        break;
-    }
 
-    case MsgType::EntityAuthority: {
-        uint32_t nid = 0, new_owner = 0;
-        if (!r.read(nid)) return;
-        if (!r.read(new_owner)) return;
-
-        auto e = resolve(nid);
-        if (e == entt::null) return;
-
-        auto& reg = MainLoop::get_registry();
-        if (reg.valid(e))
-            reg.emplace_or_replace<me::cmp::net::Authority>(e).id = new_owner;
-        break;
-    }
-
-    case MsgType::RpcCall: {
-        Rpc::handle_call(sender, on_server, r);
-        break;
-    }
-    case MsgType::RpcReply: {
-        Rpc::handle_reply(r);
-        break;
-    }
-
-    case MsgType::Ping: {
-        uint32_t stamp = 0;
-        if (!r.read(stamp)) return;
-
-        BinaryWriter w;
-        w.write(stamp);
-
-        if (on_server) {
-            if (sender != kInvalidPeerId)
-                send(
-                    sender,
-                    MsgType::Pong,
-                    SendFlag::UnreliableNoNagle,
-                    w.buffer()
-                );
-        } else {
-            send(
-                kServerPeerId,
-                MsgType::Pong,
-                SendFlag::UnreliableNoNagle,
-                w.buffer()
-            );
+        case MsgType::Pong: {
+            uint32_t stamp = 0;
+            if (!r.read(stamp)) return;
+            uint32_t rtt = now_ms() - stamp;
+            if (on_server) {
+                if (sender != kInvalidPeerId)
+                    set_peer_latency(sender, static_cast<float>(rtt));
+            } else {
+                set_peer_latency(kServerPeerId, static_cast<float>(rtt));
+            }
+            break;
         }
-        break;
-    }
 
-    case MsgType::Pong: {
-        uint32_t stamp = 0;
-        if (!r.read(stamp)) return;
-        uint32_t rtt = now_ms() - stamp;
-        if (on_server) {
-            if (sender != kInvalidPeerId)
-                set_peer_latency(sender, static_cast<float>(rtt));
-        } else {
-            set_peer_latency(kServerPeerId, static_cast<float>(rtt));
-        }
-        break;
-    }
-
+        default: break;
     }
 }
 
