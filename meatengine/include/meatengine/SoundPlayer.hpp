@@ -32,11 +32,13 @@ namespace me {
     public:
         SoundPlayer() = delete;
 
-        static void play(entt::resource<SoundBuffer> buffer,
-                         sf::Vector2f position = {0.f, 0.f},
-                         float min_distance = 100.f,
-                         int priority = 0,
-                         float attenuation = 1.f) {
+        static void play(
+            entt::resource<SoundBuffer> buffer,
+            sf::Vector2f position = {0.f, 0.f},
+            float min_distance = 100.f,
+            int priority = 0,
+            float attenuation = 1.f
+        ) {
             initialize();
             if (!buffer) return;
 

@@ -10,6 +10,10 @@
 namespace me::net {
 
 namespace rpc {
+    void write_arg(BinaryWriter& w, std::int8_t v);
+    void write_arg(BinaryWriter& w, std::uint8_t v);
+    void write_arg(BinaryWriter& w, std::int16_t v);
+    void write_arg(BinaryWriter& w, std::uint16_t v);
     void write_arg(BinaryWriter& w, std::int32_t v);
     void write_arg(BinaryWriter& w, std::uint32_t v);
     void write_arg(BinaryWriter& w, std::int64_t v);
@@ -20,6 +24,7 @@ namespace rpc {
     void write_arg(BinaryWriter& w, const std::string& v);
     void write_arg(BinaryWriter& w, const char* v);
 
+    void write_arg(BinaryWriter& w, const std::vector<std::uint8_t>& v);
     template<typename T> void write_arg(BinaryWriter&, T&&) = delete;
 
     template<typename... Args>

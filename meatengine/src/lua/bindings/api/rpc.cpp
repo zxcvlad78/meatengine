@@ -1,66 +1,160 @@
-#include <string>
 #include <meatengine/lua/LuaBinder.hpp>
-
-#include <meatengine/meatnet/Serialization.hpp>
 #include <meatengine/meatnet/Rpc.hpp>
+#include <meatengine/meatnet/Serialization.hpp>
+
+#include <cmath>
+#include <iostream>
+#include <limits>
+#include <stdexcept>
+#include <string>
+
+namespace {
+
+using me::net::RpcContext;
+using me::net::BinaryReader;
+using me::net::BinaryWriter;
+
+void write_lua_value(BinaryWriter& w, const sol::object& v, const char* who) {
+    switch (v.get_type()) {
+        case sol::type::number: {
+            double d = v.as<double>();
+            if (std::isfinite(d) && d == std::floor(d) &&
+                d >= static_cast<double>(std::numeric_limits<int32_t>::min()) &&
+                d <= static_cast<double>(std::numeric_limits<int32_t>::max())) {
+                    w.WriteInt32(static_cast<int32_t>(d));
+                } else if (std::isfinite(d) && d == std::floor(d) && std::abs(d) < 9.0e18) {
+                    w.WriteInt64(static_cast<int64_t>(d));
+                } else {
+                    w.WriteFloat(static_cast<float>(d));
+                }
+            return;
+        }
+        case sol::type::boolean: w.WriteBool(v.as<bool>()); return;
+        case sol::type::string: w.WriteString(v.as<std::string>()); return;
+        default:
+            throw std::runtime_error(
+                std::string(who) +
+                ": unsupported Lua type (only number, boolean, string)"
+            );
+    }
+}
+
+}
 
 static void bind(sol::state& lua) {
+    auto ctx_ut = lua.new_usertype<RpcContext>("RpcContext",
+        sol::no_constructor,
+        "sender", sol::readonly(&RpcContext::sender),
+        "from_server", sol::readonly(&RpcContext::from_server),
+        "request_id", sol::readonly(&RpcContext::request_id),
+        "has_reply", sol::readonly(&RpcContext::has_reply)
+    );
+
+    ctx_ut.set_function("reply",
+        [](RpcContext& ctx, sol::variadic_args va) {
+            BinaryWriter w;
+            for (auto v : va) write_lua_value(w, v, "RpcContext.reply");
+            ctx.reply_payload = w.GetBuffer();
+            ctx.has_reply = true;
+        });
+
+    ctx_ut.set_function("reply_empty", [](RpcContext& ctx) {
+        ctx.reply_payload.clear();
+        ctx.has_reply = true;
+    });
+
     sol::table rpc = lua.create_table();
     lua["Rpc"] = rpc;
 
     rpc.set_function("bind",
         [](const std::string& name, sol::protected_function fn) {
             me::net::Rpc::bind(name,
-                [name, fn](me::net::RpcContext& ctx, me::net::BinaryReader& r) {
-                    sol::state_view lua(fn.lua_state());
-                    sol::table args = lua.create_table();
-                    int i = 1;
-                    while (r.GetRemaining() > 0) {
-                        uint8_t t = 0;
-                        if (!r.ReadUInt8(t)) break;
-                        switch (t) {
-                            case 0: { int32_t v; r.ReadInt32(v); args[i++] = v; break; }
-                            case 1: { uint32_t v; r.ReadUInt32(v); args[i++] = v; break; }
-                            case 2: { float v; r.ReadFloat(v); args[i++] = v; break; }
-                            case 3: { bool v; r.ReadBool(v); args[i++] = v; break; }
-                            case 4: { std::string v; r.ReadString(v); args[i++] = v; break; }
-                            default: return;
-                        }
-                    }
-                    auto res = fn(args, ctx.request_id, ctx.sender);
+                [name, fn](RpcContext& ctx, BinaryReader& r) {
+                    auto res = fn(&ctx, &r);
                     if (!res.valid()) {
                         sol::error e = res;
-                        std::cerr << "[Rpc.bind '" << name << "'] " << e.what() << "\n";
+                        std::cerr <<
+                            "[Rpc.bind '" << name << "'] "
+                        << e.what() << "\n";
                     }
                 });
         });
 
     rpc.set_function("invoke",
         [](const std::string& name, sol::variadic_args va) {
-            me::net::BinaryWriter w;
-            for (auto v : va) {
-                auto t = v.get_type();
-                if (t == sol::type::number) {
-                    if (v.is<int>()) { w.WriteUInt8(0); w.WriteInt32(v.as<int>()); }
-                    else { w.WriteUInt8(2); w.WriteFloat(v.as<float>()); }
-                } else if (t == sol::type::boolean) { w.WriteUInt8(3); w.WriteBool(v.as<bool>()); }
-                else if (t == sol::type::string) { w.WriteUInt8(4); w.WriteString(v.as<std::string>()); }
-            }
+            BinaryWriter w;
+            for (auto v : va) write_lua_value(w, v, "Rpc.invoke");
             me::net::Rpc::invoke(name, w.GetBuffer());
         });
 
     rpc.set_function("invoke_on",
         [](me::net::PeerId target, const std::string& name, sol::variadic_args va) {
-            me::net::BinaryWriter w;
-            for (auto v : va) {
-                auto t = v.get_type();
-                if (t == sol::type::number) {
-                    if (v.is<int>())        { w.WriteUInt8(0); w.WriteInt32(v.as<int>()); }
-                    else                    { w.WriteUInt8(2); w.WriteFloat(v.as<float>()); }
-                } else if (t == sol::type::boolean) { w.WriteUInt8(3); w.WriteBool(v.as<bool>()); }
-                else if (t == sol::type::string)    { w.WriteUInt8(4); w.WriteString(v.as<std::string>()); }
-            }
+            BinaryWriter w;
+            for (auto v : va) write_lua_value(w, v, "Rpc.invoke_to");
             me::net::Rpc::invoke(target, name, w.GetBuffer());
+        });
+
+    rpc.set_function("invoke_async",
+        [](const std::string& name,
+           sol::protected_function on_reply,
+           sol::protected_function on_timeout,
+           float timeout_sec,
+           sol::variadic_args va)
+        {
+            BinaryWriter w;
+            for (auto v : va) write_lua_value(w, v, "Rpc.invoke_async");
+
+            me::net::Rpc::invoke_async(
+                name,
+                [on_reply](BinaryReader& rr) {
+                    auto res = on_reply(&rr);
+                    if (!res.valid()) {
+                        sol::error e = res;
+                        std::cerr << "[Rpc.reply] " << e.what() << "\n";
+                    }
+                },
+                [on_timeout]() {
+                    auto res = on_timeout();
+                    if (!res.valid()) {
+                        sol::error e = res;
+                        std::cerr << "[Rpc.timeout] " << e.what() << "\n";
+                    }
+                },
+                w.GetBuffer(),
+                timeout_sec);
+        });
+
+    rpc.set_function("invoke_on_async",
+        [](
+            me::net::PeerId target,
+            const std::string& name,
+            sol::protected_function on_reply,
+            sol::protected_function on_timeout,
+            float timeout_sec,
+            sol::variadic_args va
+        ) {
+            BinaryWriter w;
+            for (auto v : va) write_lua_value(w, v, "Rpc.invoke_on_async");
+
+            me::net::Rpc::invoke_async(
+                target,
+                name,
+                [on_reply](BinaryReader& rr) {
+                    auto res = on_reply(&rr);
+                    if (!res.valid()) {
+                        sol::error e = res;
+                        std::cerr << "[Rpc.reply] " << e.what() << "\n";
+                    }
+                },
+                [on_timeout]() {
+                    auto res = on_timeout();
+                    if (!res.valid()) {
+                        sol::error e = res;
+                        std::cerr << "[Rpc.timeout] " << e.what() << "\n";
+                    }
+                },
+                w.GetBuffer(),
+                timeout_sec);
         });
 
     rpc.set_function("has",

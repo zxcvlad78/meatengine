@@ -14,6 +14,11 @@
 
 namespace me::net {
 
+std::unordered_map<std::uint32_t, std::string>& packed_ids() {
+    static std::unordered_map<std::uint32_t, std::string> m;
+    return m;
+}
+
 static ConnectionID conn_of(PeerId id) {
     auto it = Network::peers().find(id);
     return it == Network::peers().end()
@@ -221,11 +226,6 @@ void Network::set_peer_latency(PeerId id, float ms) {
     if (it != _peers.end()) it->second.latency_ms = ms;
 }
 
-std::unordered_map<std::uint32_t, std::string>& packed_ids() {
-    static std::unordered_map<std::uint32_t, std::string> m;
-    return m;
-}
-
 bool Network::start_server(uint16_t port) {
     if (_server) return false;
 
@@ -276,6 +276,7 @@ void Network::disconnect() {
     _nid_map.clear();
     _entity_map.clear();
     _peers.clear();
+    packed_ids().clear();
     Rpc::clear();
 
     _peer_id = kServerPeerId;
@@ -304,11 +305,13 @@ void Network::remove(uint64_t net_id) {
     if (it == _nid_map.end()) return;
     _entity_map.erase(it->second);
     _nid_map.erase(it);
+    packed_ids().erase(static_cast<std::uint32_t>(net_id));
 }
 
 void Network::remove(entt::entity e) {
     auto it = _entity_map.find(e);
     if (it == _entity_map.end()) return;
+    packed_ids().erase(static_cast<std::uint32_t>(it->second));
     _nid_map.erase(it->second);
     _entity_map.erase(it);
 }
@@ -491,12 +494,18 @@ void Network::handle_message(
         if (!r.ReadUInt32(owner)) return;
         if (!r.ReadString(packed_id)) return;
 
+        if (resolve(nid) != entt::null) {
+            auto& reg = MainLoop::get_registry();
+            auto e = resolve(nid);
+            if (reg.valid(e))
+                reg.emplace_or_replace<me::cmp::net::Authority>(e, me::cmp::net::Authority{owner});
+            return;
+        }
+
         auto& reg = MainLoop::get_registry();
         auto e = PackedEntity::spawn(packed_id, reg);
         if (e == entt::null) {
-            printf("[Network][Client] EntitySpawn: unknown '%s'\n",
-                packed_id.c_str()
-            );
+            printf("[Network][Client] EntitySpawn: unknown '%s'\n", packed_id.c_str());
             return;
         }
 

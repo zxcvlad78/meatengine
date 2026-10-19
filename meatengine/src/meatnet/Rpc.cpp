@@ -7,15 +7,23 @@
 namespace me::net {
 
 namespace rpc {
-void write_arg(BinaryWriter& w, std::int32_t  v) { w.WriteInt32(v); }
+void write_arg(BinaryWriter& w, std::int8_t v) { w.WriteInt8(v); }
+void write_arg(BinaryWriter& w, std::uint8_t v) { w.WriteUInt8(v); }
+void write_arg(BinaryWriter& w, std::int16_t v) { w.WriteInt16(v); }
+void write_arg(BinaryWriter& w, std::uint16_t v) { w.WriteUInt16(v); }
+void write_arg(BinaryWriter& w, std::int32_t v) { w.WriteInt32(v); }
 void write_arg(BinaryWriter& w, std::uint32_t v) { w.WriteUInt32(v); }
-void write_arg(BinaryWriter& w, std::int64_t  v) { w.WriteInt64(v); }
+void write_arg(BinaryWriter& w, std::int64_t v) { w.WriteInt64(v); }
 void write_arg(BinaryWriter& w, std::uint64_t v) { w.WriteUInt64(v); }
 void write_arg(BinaryWriter& w, float v) { w.WriteFloat(v); }
 void write_arg(BinaryWriter& w, double v) { w.WriteFloat(static_cast<float>(v)); }
 void write_arg(BinaryWriter& w, bool v) { w.WriteBool(v); }
 void write_arg(BinaryWriter& w, const std::string& v) { w.WriteString(v); }
 void write_arg(BinaryWriter& w, const char* v) { w.WriteString(v ? std::string{v} : std::string{}); }
+void write_arg(BinaryWriter& w, const std::vector<std::uint8_t>& v) {
+    if (!v.empty())
+        w.WriteBytes(v.data(), v.size());
+}
 }
 
 

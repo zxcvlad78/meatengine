@@ -5,12 +5,18 @@
 #include <meatengine/meatnet/Serialization.hpp>
 
 static void bind(sol::state& lua) {
+    lua.new_usertype<me::net::PeerInfo>("PeerInfo",
+        sol::no_constructor,
+        "connection_id", &me::net::PeerInfo::conn,
+        "address", &me::net::PeerInfo::address,
+        "latency", &me::net::PeerInfo::latency_ms
+    );
 
     sol::table table = lua.create_table();
     lua["Network"] = table;
 
-    table.set_function("start_server", [](uint16_t port = me::net::kDefaultPort) {
-        return me::net::Network::start_server(port);
+    table.set_function("start_server", [](sol::optional<uint16_t> port) {
+        return me::net::Network::start_server(port.value_or(me::net::kDefaultPort));
     });
 
     table.set_function("connect", [](const std::string& address) {
@@ -31,6 +37,9 @@ static void bind(sol::state& lua) {
 
     table.set_function("peer_id",
         []() { return me::net::Network::peer_id(); });
+
+    table.set_function("peers",
+        []() { return me::net::Network::peers(); });
 
     table.set_function("spawn_entity",
         [](const std::string& id, uint32_t owner) {
