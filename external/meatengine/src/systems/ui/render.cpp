@@ -23,13 +23,13 @@ void run() {
 
     std::sort(order.begin(), order.end(), [&](entt::entity a, entt::entity b) {
         return r.get<me::cmp::ui::ComputedNode>(a).stack_index
-             < r.get<me::cmp::ui::ComputedNode>(b).stack_index;
+            < r.get<me::cmp::ui::ComputedNode>(b).stack_index;
     });
 
     for (auto e : order) {
         sf::Transform xf = r.try_get<me::cmp::GlobalTransform>(e)
-                         ? r.get<me::cmp::GlobalTransform>(e).transform
-                         : sf::Transform{};
+                        ? r.get<me::cmp::GlobalTransform>(e).transform
+                        : sf::Transform{};
 
         if (auto* fr = r.try_get<me::cmp::ui::FillRect>(e))
             win.draw(fr->shape, xf);

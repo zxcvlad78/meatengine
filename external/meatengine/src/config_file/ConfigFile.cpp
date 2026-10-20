@@ -7,40 +7,82 @@ namespace me {
     std::string ConfigFile::get_save_path() const { return _save_path; }
 
     bool ConfigFile::parse_line(const std::string& line, std::string& key, std::string& value) {
-        size_t eq = line.find('=');
-        if (eq == std::string::npos || eq == 0 || eq == line.size() - 1)
+        using SV = std::string_view;
+        static constexpr SV kWhitespace = " \t\r\n";
+
+        auto trim = [](SV s) -> SV {
+            const auto b = s.find_first_not_of(kWhitespace);
+            if (b == SV::npos) return {};
+            const auto e = s.find_last_not_of(kWhitespace);
+            return s.substr(b, e - b + 1);
+        };
+
+        const auto eq = line.find('=');
+        if (eq == std::string::npos)
             return false;
-        key = line.substr(0, eq);
-        value = line.substr(eq + 1);
-        key.erase(0, key.find_first_not_of(" \t"));
-        key.erase(key.find_last_not_of(" \t") + 1);
-        value.erase(0, value.find_first_not_of(" \t"));
-        value.erase(value.find_last_not_of(" \t") + 1);
+
+        SV k = trim(SV(line).substr(0, eq));
+        if (k.empty())
+            return false;
+
+        SV v = trim(SV(line).substr(eq + 1));
+
+        if (v.size() >= 2 &&
+            ((v.front() == '"'  && v.back() == '"') ||
+            (v.front() == '\'' && v.back() == '\'')))
+        {
+            v = v.substr(1, v.size() - 2);
+        } else {
+            if (auto h = v.find('#'); h != SV::npos) {
+                if (h == 0 || v[h - 1] == ' ' || v[h - 1] == '\t')
+                    v = trim(v.substr(0, h));
+            }
+        }
+
+        if (v.empty())
+            return false;
+
+        key.assign(k);
+        value.assign(v);
         return true;
     }
 
     bool ConfigFile::load(const std::string& path) {
-        std::string full_path;
-        if (path.empty()) full_path = me::FileSystem::get_full_path(_save_path);
-        else full_path = me::FileSystem::get_full_path(path);
+        const std::string full_path =
+            me::FileSystem::get_full_path(path.empty() ? _save_path : path);
 
-        if (!std::filesystem::exists(full_path)) {
+        if (!std::filesystem::exists(full_path))
             return false;
-        }
-        std::ifstream file(full_path);
-        if (!file.is_open()) {
+
+        std::ifstream file(full_path, std::ios::binary);
+        if (!file.is_open())
             return false;
-        }
 
         values.clear();
         std::string line;
+        bool first = true;
+
         while (std::getline(file, line)) {
-            if (line.empty() || line[0] == '#')
-                continue;
-            std::string key, value;
-            if (parse_line(line, key, value)) {
-                values[key] = value;
+            if (first) {
+                first = false;
+                if (line.size() >= 3 &&
+                    static_cast<unsigned char>(line[0]) == 0xEF &&
+                    static_cast<unsigned char>(line[1]) == 0xBB &&
+                    static_cast<unsigned char>(line[2]) == 0xBF)
+                    line.erase(0, 3);
             }
+
+            if (!line.empty() && line.back() == '\r')
+                line.pop_back();
+
+            if (line.empty())
+                continue;
+            if (line[0] == '#' || line[0] == ';')
+                continue;
+
+            std::string key, value;
+            if (parse_line(line, key, value))
+                values[key] = value;
         }
         return true;
     }
@@ -75,16 +117,6 @@ namespace me {
         if (v == "false" || v == "0" || v == "no" || v == "off")
             return false;
         return default_value;
-    }
-
-
-    // string
-    void ConfigFile::set(const std::string& key, const std::string value) {
-        values[key] = value;
-    }
-    std::string ConfigFile::get(const std::string& key, const std::string default_value) const {
-        auto it = values.find(key);
-        return (it != values.end()) ? it->second : default_value;
     }
 
     // int
@@ -138,5 +170,14 @@ namespace me {
         auto it = values.find(key);
         if (it != values.end()) return it->second;
         return default_value ? default_value : "";
+    }
+
+    // string
+    void ConfigFile::set(const std::string& key, const std::string value) {
+        values[key] = value;
+    }
+    std::string ConfigFile::get(const std::string& key, const std::string default_value) const {
+        auto it = values.find(key);
+        return (it != values.end()) ? it->second : default_value;
     }
 } // namespace me

@@ -30,9 +30,19 @@ using namespace me;
 using namespace me::cmp;
 using namespace me::cmp::ui;
 
+ConfigFile* config = new ConfigFile("user://states/main_menu.cfg");
+std::string connection_address;
+
+void load_cfg() {
+    config->load();
+    connection_address = config->get("connection_address", "127.0.0.1:2302");
+}
+
 namespace godlike::states {
 
 void MainMenu::on_enter(sf::RenderWindow&, entt::registry& r) {
+    load_cfg();
+
     auto root = r.create();
     r.emplace<Transform>(root);
     r.emplace<Children>(root);
@@ -97,17 +107,17 @@ void MainMenu::on_enter(sf::RenderWindow&, entt::registry& r) {
     r.emplace<OnEvent>(conn_btn).cb =
         [](entt::registry&, entt::entity, Event& ev) {
             if (ev.type == EventType::Click) {
-                me::net::Network::connect("127.0.0.1:2302");
-                ScriptedStateRegistry::change_to("core:world");
                 ev.handled = true;
+                if (!me::net::Network::connect(connection_address)) return;
+                ScriptedStateRegistry::change_to("core:world");
             }
         };
 
     r.emplace<OnEvent>(mods_btn).cb =
         [](entt::registry&, entt::entity, Event& ev) {
             if (ev.type == EventType::Click) {
-                GameStateRegistry::change_to("godlike:mod_list");
                 ev.handled = true;
+                GameStateRegistry::change_to("godlike:mod_list");
             }
         };
 }
