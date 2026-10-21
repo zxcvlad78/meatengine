@@ -15,7 +15,7 @@ namespace me {
 }
 
 ME_REGISTER_SYSTEM(
-    "engine:NAME:update",
+    "namespace:name",
     me::SystemPhase::Update,
     0,
     me::update
