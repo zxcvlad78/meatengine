@@ -22,3 +22,5 @@
 
 #include<meatengine/config_file/ConfigFile.hpp>
 #include<meatengine/console/Console.hpp>
+
+#include<meatengine/App.hpp>

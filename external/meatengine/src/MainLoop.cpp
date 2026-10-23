@@ -22,15 +22,12 @@ namespace me {
         m_window.setFramerateLimit(144);
 
         // потом как нибудь
-        entt::resource<me::Font> mainfont = me::ResourceLoader::load<Font>("data/core/res/fonts/mainfont.ttf");
-        if (mainfont.handle()) {
-            Console::get_instance().init(mainfont->res, 16);
-        } else {
-            std::shared_ptr<me::Font> default_font = ResourceLoader::get_default<Font>();
-            if (default_font != nullptr) {
-                Console::get_instance().init(default_font->res, 16);
-            }
+
+        std::shared_ptr<me::Font> default_font = ResourceLoader::get_default<Font>();
+        if (default_font != nullptr) {
+            Console::get_instance().init(default_font->res, 16);
         }
+        
         //
     }
 

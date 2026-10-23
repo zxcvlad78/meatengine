@@ -43,11 +43,6 @@ namespace me {
         try {
             auto spritesheet = std::make_shared<SpriteSheet>();
 
-            if (data.contains("meta") && data["meta"].is_object()) {
-                auto& meta = data["meta"];
-                spritesheet->atlas_width = meta.value("width", 1);
-                spritesheet->atlas_height = meta.value("height", 1);
-            }
             if (data.contains("animations") && data["animations"].is_object()) {
                 for (auto& [anim_name, anim_data] : data["animations"].items()) {
                     Animation anim;

@@ -4,8 +4,11 @@ PackedEntity.register("core:player", function(world)
     world:add_Velocity(e)
     world:add_PlayerInput(e)
     local sp = world:add_Sprite(e)
+    sp.center = true
+    sp.texture = ResourceLoader.load_Texture("data/core/res/textures/player0.png")
     local sp_anim = world:add_SpriteAnimation(e)
-    sp.texture = ResourceLoader.load_Texture("data/core/res/textures/pacan.png")
+    sp_anim.spritesheet = ResourceLoader.load_SpriteSheet("data/core/res/spritesheets/player0.json")
+    sp_anim:play("idle")
     local move_speed = world:add_MoveSpeed(e)
     move_speed.value = 100
     local cam = world:add_Camera(e)
@@ -26,7 +29,7 @@ PackedEntity.register("core:ui:label", function(world)
     local e = PackedEntity.spawn("core:ui:base_node", world)
 
     local lb = world:add_Label(e)
-    lb.font = ResourceLoader.load_Font("data/core/res/fonts/mainfont.ttf")
+    --lb.font = ResourceLoader.load_Font("data/core/res/fonts/mainfont.ttf")
     lb.text = "Label"
 
     return e

@@ -63,6 +63,7 @@ namespace me {
         std::string op;
         ModVersion version;
 
+
         static ModDependency parse(const std::string& s) {
             ModDependency d;
 
@@ -111,8 +112,11 @@ namespace me {
 
     struct ModInfo {
         std::string name;
+        std::string title;
+        std::string description;
         ModVersion version;
         std::string path; // abs path
         std::vector<ModDependency> dependencies;
+
     };
 };

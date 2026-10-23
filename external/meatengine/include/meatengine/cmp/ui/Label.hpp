@@ -81,7 +81,11 @@ namespace me::cmp::ui {
             text->setPosition(p);
         }
 
-        Label() = default;
+        Label() {
+            auto f = ResourceLoader::get_default<me::Font>();
+            if (!f) return;
+            set_font(entt::resource<me::Font>{f});
+        }
 
         explicit Label(entt::resource<me::Font> font) {
             set_font(std::move(font));

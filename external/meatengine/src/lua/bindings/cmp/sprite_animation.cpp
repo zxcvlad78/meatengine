@@ -28,11 +28,10 @@ static void bind(sol::state& lua) {
         "time_accumulator", &me::cmp::SpriteAnimation::time_accumulator,
         "next_anim", &me::cmp::SpriteAnimation::next_anim,
 
-        "play", [](me::cmp::SpriteAnimation& sa,
-                const std::string& name,
-                sol::optional<std::string> next) {
+        "play", [](me::cmp::SpriteAnimation& sa, const std::string& name, sol::optional<std::string> next) {
             return sa.play(name, next.value_or(""));
         }
+            
     );
 
     me::lua::register_component<me::cmp::SpriteAnimation>("SpriteAnimation", lua);
