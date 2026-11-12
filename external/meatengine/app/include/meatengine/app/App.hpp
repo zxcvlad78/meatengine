@@ -1,11 +1,10 @@
 #pragma once
 #include <string>
 
-#include <meatengine/binres/mainfont.h>
-#include <meatengine/MainLoop.hpp>
-#include <meatengine/ModLoader.hpp>
-#include <meatengine/ResourceLoader.hpp>
-#include <meatengine/Resources.hpp>
+#include <meatengine/assets/binary/mainfont.h>
+#include <meatengine/assets/ResourceLoader.hpp>
+#include <meatengine/assets/Resources.hpp>
+#include <meatengine/app/MainLoop.hpp>
 
 namespace me {
     class App {
@@ -17,7 +16,7 @@ namespace me {
         : name_(name) {
             auto font = std::make_shared<me::Font>();  
             try {
-                auto success = font->res.openFromMemory(______data_core_res_fonts_mainfont_ttf, ______data_core_res_fonts_mainfont_ttf_len);
+                auto success = font->res.openFromMemory(______mainfont_ttf, ______mainfont_ttf_len);
                 if (success) {
                     entt::resource<me::Font> main_font{std::move(font)};
                     me::ResourceLoader::set_default<me::Font>(std::move(main_font));
@@ -29,13 +28,14 @@ namespace me {
             }
         }
 
-        inline void set_name(const std::string& name) { name_ = std::move(name); }
+        inline App& set_name(const std::string& name) {
+            name_ = std::move(name);
+            return *this;
+        }
         inline const std::string& get_name() { return name_; }
 
         inline App& run() {
             me::MainLoop::init(name_);
-            me::ModLoader::load("data");
-
             return *this;
         }
     };

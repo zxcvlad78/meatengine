@@ -1,9 +1,9 @@
 #pragma once
 
-#include <meatengine/Resources.hpp>
+#include <meatengine/assets/Resources.hpp>
 #include <string>
 
-namespace me::cmp {
+namespace me::graphics::cmp {
     struct SpriteAnimation {
         entt::resource<me::SpriteSheet> spritesheet;
         const me::Animation* current_animation = nullptr;

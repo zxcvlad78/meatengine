@@ -1,7 +1,7 @@
 #pragma once
 #include <SFML/System/Vector2.hpp>
 
-namespace me::cmp {
+namespace me::spatial::cmp {
     struct Offset {
         sf::Vector2f position;
 

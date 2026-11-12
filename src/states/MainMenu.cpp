@@ -1,34 +1,40 @@
-#include <meatengine/SystemRegistry.hpp>
-#include <meatengine/MainLoop.hpp>
-#include <meatengine/hierarchy.hpp>
-#include <meatengine/PackedEntity.hpp>
+#include <meatengine/ecs/SystemRegistry.hpp>
+#include <meatengine/app/MainLoop.hpp>
+#include <meatengine/app/GameStateRegistry.hpp>
+#include <meatengine/hierarchy/hierarchy.hpp>
+#include <meatengine/ecs/PackedEntity.hpp>
+#include <meatengine/assets/ConfigFile.hpp>
+#include <meatengine/scripting/ScriptedStateRegistry.hpp>
 
-#include <meatengine/cmp/Transform.hpp>
-#include <meatengine/cmp/Parent.hpp>
-#include <meatengine/cmp/Children.hpp>
-#include <meatengine/cmp/ZIndex.hpp>
-#include <meatengine/cmp/GlobalZIndex.hpp>
+#include <meatengine/spatial/cmp/Transform.hpp>
+#include <meatengine/hierarchy/cmp/Parent.hpp>
+#include <meatengine/hierarchy/cmp/Children.hpp>
+#include <meatengine/abstract/cmp/ZIndex.hpp>
+#include <meatengine/abstract/cmp/GlobalZIndex.hpp>
 
-#include <meatengine/cmp/ui/UIRoot.hpp>
-#include <meatengine/cmp/ui/Node.hpp>
-#include <meatengine/cmp/ui/FlexStyle.hpp>
-#include <meatengine/cmp/ui/FillRect.hpp>
-#include <meatengine/cmp/ui/Label.hpp>
-#include <meatengine/cmp/ui/BackgroundColor.hpp>
-#include <meatengine/cmp/ui/BorderColor.hpp>
-#include <meatengine/cmp/ui/BorderWidth.hpp>
-#include <meatengine/cmp/ui/Interaction.hpp>
-#include <meatengine/cmp/ui/FocusPolicy.hpp>
-#include <meatengine/cmp/ui/Focusable.hpp>
-#include <meatengine/cmp/ui/OnEvent.hpp>
+#include <meatengine/ui/helpers.hpp>
+#include <meatengine/ui/cmp/UIRoot.hpp>
+#include <meatengine/ui/cmp/Node.hpp>
+#include <meatengine/ui/cmp/FlexStyle.hpp>
+#include <meatengine/ui/cmp/FillRect.hpp>
+#include <meatengine/ui/cmp/Label.hpp>
+#include <meatengine/ui/cmp/BackgroundColor.hpp>
+#include <meatengine/ui/cmp/BorderColor.hpp>
+#include <meatengine/ui/cmp/BorderWidth.hpp>
+#include <meatengine/ui/cmp/Interaction.hpp>
+#include <meatengine/ui/cmp/FocusPolicy.hpp>
+#include <meatengine/ui/cmp/Focusable.hpp>
+#include <meatengine/ui/cmp/OnEvent.hpp>
 
 #include <meatengine/net/Network.hpp>
 
 #include <godlike/states/MainMenu.hpp>
 
 using namespace me;
-using namespace me::cmp;
-using namespace me::cmp::ui;
+using namespace me::spatial::cmp;
+using namespace me::hierarchy::cmp;
+using namespace me::abstract::cmp;
+using namespace me::ui::cmp;
 
 ConfigFile* config = new ConfigFile("user://states/main_menu.cfg");
 std::string connection_address;
@@ -78,13 +84,13 @@ void MainMenu::on_enter(sf::RenderWindow&, entt::registry& r) {
     }
 
     hierarchy::set_parent(r, host_btn, bg);
-    hierarchy::set_button_text(r, host_btn, "Host");
+    ui::set_button_text(r, host_btn, "Host");
 
     hierarchy::set_parent(r, conn_btn, bg);
-    hierarchy::set_button_text(r, conn_btn, "Connect");
+    ui::set_button_text(r, conn_btn, "Connect");
 
     hierarchy::set_parent(r, mods_btn, bg);
-    hierarchy::set_button_text(r, mods_btn, "Mods");
+    ui::set_button_text(r, mods_btn, "Mods");
 
     for (auto btn : { mods_btn, host_btn, conn_btn }) {
         if (auto* n = r.try_get<Node>(btn)) {
@@ -120,7 +126,7 @@ void MainMenu::on_enter(sf::RenderWindow&, entt::registry& r) {
                 GameStateRegistry::change_to("godlike:mod_list");
             }
         };
-}
+}`
 
 void MainMenu::handle_event(sf::RenderWindow&, entt::registry&, const sf::Event&) {}
 

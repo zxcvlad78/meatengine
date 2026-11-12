@@ -7,9 +7,9 @@
 #include <entt/entity/registry.hpp>
 #include <entt/entity/entity.hpp>
 
-#include <meatengine/Resources.hpp>
-#include <meatengine/ResourceLoader.hpp>
-#include <meatengine/cmp/ui/States.hpp>
+#include <meatengine/assets/Resources.hpp>
+#include <meatengine/assets/ResourceLoader.hpp>
+#include <meatengine/ui/cmp/States.hpp>
 
 namespace me::ui::cmp {
     struct Label {

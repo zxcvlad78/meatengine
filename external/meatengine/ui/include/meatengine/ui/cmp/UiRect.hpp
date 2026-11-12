@@ -1,5 +1,5 @@
 #pragma once
-#include <meatengine/cmp/ui/Val.hpp>
+#include <meatengine/ui/cmp/Val.hpp>
 
 namespace me::ui::cmp {
 

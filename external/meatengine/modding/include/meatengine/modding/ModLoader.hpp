@@ -1,6 +1,6 @@
 #pragma once
 
-#include <meatengine/ModInfo.hpp>
+#include <meatengine/modding/ModInfo.hpp>
 
 #include <string>
 #include <unordered_map>

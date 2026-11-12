@@ -1,4 +1,4 @@
-#include <meatengine/FileSystem.hpp>
+#include <meatengine/assets/FileSystem.hpp>
 
 #include <fstream>
 #include <sstream>

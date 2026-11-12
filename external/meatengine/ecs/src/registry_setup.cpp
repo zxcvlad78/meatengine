@@ -1,4 +1,4 @@
-#include <meatengine/registry_setup.hpp>
+#include <meatengine/ecs/registry_setup.hpp>
 #include <iostream>
 
 namespace me::registry_setup {

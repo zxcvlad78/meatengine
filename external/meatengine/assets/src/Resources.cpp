@@ -1,5 +1,5 @@
-#include <meatengine/Resources.hpp>
-#include <meatengine/ResourceLoader.hpp>
+#include <meatengine/assets/Resources.hpp>
+#include <meatengine/assets/ResourceLoader.hpp>
 
 namespace me {
     std::shared_ptr<Texture> Texture::operator()(const std::string& path) const {

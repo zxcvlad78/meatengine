@@ -1,34 +1,39 @@
-#include <meatengine/MainLoop.hpp>
+#include <meatengine/app/MainLoop.hpp>
 
-#include <meatengine/Resources.hpp>
-#include <meatengine/ResourceLoader.hpp>
-#include <meatengine/console/Console.hpp>
-#include <meatengine/ctx/InputState.hpp>
+#include <meatengine/assets/Resources.hpp>
+#include <meatengine/assets/ResourceLoader.hpp>
+#include <meatengine/app/ctx/InputState.hpp>
 
-#include <meatengine/ScriptingServer.hpp>
-#include <meatengine/SystemRegistry.hpp>
-#include <meatengine/registry_setup.hpp>
-
-#include <meatengine/net/Network.hpp>
+#include <meatengine/ecs/SystemRegistry.hpp>
+#include <meatengine/ecs/registry_setup.hpp>
 
 namespace me {
+
+    void MainLoop::add_on_init(InitHook hook) {
+        if (hook) m_on_init.push_back(std::move(hook));
+    }
+    void MainLoop::add_on_update(UpdateHook hook) {
+        if (hook) m_on_update.push_back(std::move(hook));
+    }
+    void MainLoop::add_on_render(RenderHook hook) {
+        if (hook) m_on_render.push_back(std::move(hook));
+    }
+    void MainLoop::add_on_event(EventHook hook) {
+        if (hook) m_on_event.push_back(std::move(hook));
+    }
+    void MainLoop::add_on_shutdown(ShutdownHook hook) {
+        if (hook) m_on_shutdown.push_back(std::move(hook));
+    }
 
     void MainLoop::init(const std::string& title, sf::VideoMode default_mode) {
         m_prev_mode = std::move(default_mode);
         m_window_title = std::move(title);
-        m_registry.ctx().emplace<ctx::InputState>();
+        m_registry.ctx().emplace<app::ctx::InputState>();
         me::registry_setup::run(m_registry);
         m_window.create(m_prev_mode, title);
         m_window.setFramerateLimit(144);
 
-        // потом как нибудь
-
-        std::shared_ptr<me::Font> default_font = ResourceLoader::get_default<Font>();
-        if (default_font != nullptr) {
-            Console::get_instance().init(default_font->res, 16);
-        }
-        
-        //
+        for (auto& hook : m_on_init) hook(m_window);
     }
 
     std::string MainLoop::get_window_title() { return m_window_title; }
@@ -79,7 +84,7 @@ namespace me {
 
 
     void MainLoop::process_events() {
-        auto& in = m_registry.ctx().get<ctx::InputState>();
+        auto& in = m_registry.ctx().get<app::ctx::InputState>();
 
         in.mouse_just_pressed = false;
         in.mouse_just_released = false;
@@ -100,7 +105,7 @@ namespace me {
             }
             else if (auto* mb = event->getIf<sf::Event::MouseButtonReleased>()) {
                 if (mb->button == sf::Mouse::Button::Left)
-                    in.mouse_just_released = true;
+                in.mouse_just_released = true;
             }
 
             if (const auto* keyPressed = event->getIf<sf::Event::KeyPressed>()) {
@@ -115,9 +120,7 @@ namespace me {
                 }
             }
 
-            // потом как нибудь
-            me::Console::get_instance().handle_event(*event, m_window);
-            //
+            for (auto& hook : m_on_event) hook(*event, m_window);
 
             if (m_current_state) {
                 m_current_state->handle_event(m_window, m_registry, *event);
@@ -126,9 +129,6 @@ namespace me {
     }
 
     void MainLoop::run(std::unique_ptr<GameState> initial_state) {
-        if (!net::InitNetwork())
-            printf("[MainLoop] run: Falied to initialize Network\n");
-
         change_state(std::move(initial_state));
 
         while (m_window.isOpen()) {
@@ -149,33 +149,34 @@ namespace me {
             int steps = 0;
             while (m_fixed_accum >= m_fixed_dt && steps < m_max_fixed_steps) {
                 me::SystemRegistry::run(SystemPhase::FixedUpdate);
-                
+
                 m_fixed_accum -= m_fixed_dt;
                 ++steps;
             }
-            
+
             if (m_fixed_accum >= m_fixed_dt) {
                 m_fixed_accum = 0.f;
             }
             m_fixed_alpha = m_fixed_accum / m_fixed_dt;
 
             me::SystemRegistry::run(SystemPhase::Update);
-            me::Console::get_instance().update(m_window, m_dt); // remove
+
+            for (auto& hook : m_on_update) hook(m_window, m_dt);
 
             m_window.clear(sf::Color::Black);
-            
+
             me::SystemRegistry::run(SystemPhase::Render);
 
             m_window.setView(m_window.getDefaultView());
 
             me::SystemRegistry::run(SystemPhase::PostRender);
-            me::Console::get_instance().render(m_window); // remove
+
+            for (auto& hook : m_on_render) hook(m_window);
 
             m_window.display();
         }
 
-        net::ShutdownNetwork();
+        for (auto& hook : m_on_shutdown) hook();
     }
 
 } // namespace me
- 

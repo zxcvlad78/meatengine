@@ -2,12 +2,11 @@
 #include <meatengine/net/Replication.hpp>
 #include <meatengine/net/Rpc.hpp>
 
-#include <meatengine/MainLoop.hpp>
-#include <meatengine/PackedEntity.hpp>
+#include <meatengine/app/MainLoop.hpp>
+#include <meatengine/ecs/PackedEntity.hpp>
 
-#include <meatengine/cmp/Camera.hpp>
-#include <meatengine/cmp/net/NetId.hpp>
-#include <meatengine/cmp/net/Authority.hpp>
+#include <meatengine/net/cmp/NetId.hpp>
+#include <meatengine/net/cmp/Authority.hpp>
 
 #include <chrono>
 #include <cstdio>
@@ -107,7 +106,7 @@ static void on_client_disconnected(ConnectionID conn, int reason, const char* db
     if (auto_cleanup_owned_flag()) {
         auto& reg = MainLoop::get_registry();
         std::vector<entt::entity> to_destroy;
-        for (auto [e, a] : reg.view<me::cmp::net::Authority>().each())
+        for (auto [e, a] : reg.view<me::net::cmp::Authority>().each())
             if (a.id == pid && reg.valid(e)) to_destroy.push_back(e);
         for (auto e : to_destroy)
             Network::despawn_entity(e);
@@ -210,8 +209,8 @@ entt::entity Network::spawn_entity(const std::string& packed_id, PeerId owner) {
 
     std::uint32_t nid = next_net_id();
 
-    reg.emplace_or_replace<me::cmp::net::NetId>(e, me::cmp::net::NetId{nid});
-    reg.emplace_or_replace<me::cmp::net::Authority>(e, me::cmp::net::Authority{owner});
+    reg.emplace_or_replace<me::net::cmp::NetId>(e, me::net::cmp::NetId{nid});
+    reg.emplace_or_replace<me::net::cmp::Authority>(e, me::net::cmp::Authority{owner});
 
     assign(nid, e);
     packed_ids()[nid] = packed_id;
@@ -234,7 +233,7 @@ void Network::despawn_entity(entt::entity e) {
     if (!reg.valid(e)) return;
 
     std::uint32_t nid = 0;
-    if (auto* n = reg.try_get<me::cmp::net::NetId>(e))
+    if (auto* n = reg.try_get<me::net::cmp::NetId>(e))
         nid = n->value;
 
     if (nid != 0)
@@ -248,11 +247,11 @@ void Network::set_authority(entt::entity e, PeerId owner) {
     if (!_server) return;
     auto& reg = MainLoop::get_registry();
     if (!reg.valid(e)) return;
-    if (!reg.all_of<me::cmp::net::NetId>(e)) return;
+    if (!reg.all_of<me::net::cmp::NetId>(e)) return;
 
-    reg.emplace_or_replace<me::cmp::net::Authority>(e, me::cmp::net::Authority{owner});
+    reg.emplace_or_replace<me::net::cmp::Authority>(e, me::net::cmp::Authority{owner});
 
-    std::uint32_t nid = reg.get<me::cmp::net::NetId>(e).value;
+    std::uint32_t nid = reg.get<me::net::cmp::NetId>(e).value;
     send(MsgType::EntityAuthority, SendFlag::Reliable,
         [nid, owner](BinaryWriter& w) {
             w.write(nid);
@@ -362,7 +361,7 @@ void Network::remove(entt::entity e) {
 
 bool Network::is_authority(entt::entity e) {
     auto& reg = MainLoop::get_registry();
-    auto* a = reg.try_get<me::cmp::net::Authority>(e);
+    auto* a = reg.try_get<me::net::cmp::Authority>(e);
     if (!a) return true;
     return a->id == _peer_id;
 }
@@ -428,7 +427,7 @@ void Network::handle_message(
                     auto e = resolve(nid);
                     if (e == entt::null) continue;
                     auto& reg = MainLoop::get_registry();
-                    auto* a = reg.try_get<me::cmp::net::Authority>(e);
+                    auto* a = reg.try_get<me::net::cmp::Authority>(e);
                     PeerId owner = a ? a->id : kServerPeerId;
                     send(pid, MsgType::EntitySpawn, SendFlag::Reliable,
                         [nid, owner, &packed_id_str](BinaryWriter& w) {
@@ -486,7 +485,7 @@ void Network::handle_message(
                 auto& reg = MainLoop::get_registry();
                 auto e = resolve(nid);
                 if (reg.valid(e))
-                    reg.emplace_or_replace<me::cmp::net::Authority>(e, me::cmp::net::Authority{owner});
+                    reg.emplace_or_replace<me::net::cmp::Authority>(e, me::net::cmp::Authority{owner});
                 return;
             }
 
@@ -497,8 +496,8 @@ void Network::handle_message(
                 return;
             }
 
-            reg.emplace_or_replace<me::cmp::net::NetId>(e).value = nid;
-            reg.emplace_or_replace<me::cmp::net::Authority>(e).id = owner;
+            reg.emplace_or_replace<me::net::cmp::NetId>(e).value = nid;
+            reg.emplace_or_replace<me::net::cmp::Authority>(e).id = owner;
             assign(nid, e);
             break;
         }
@@ -534,7 +533,7 @@ void Network::handle_message(
                 }
 
                 if (on_server) {
-                    auto* a = reg.try_get<me::cmp::net::Authority>(e);
+                    auto* a = reg.try_get<me::net::cmp::Authority>(e);
                     if (!a || a->id != sender) {
                         if (!Replication::skip_components(r, mask)) return;
                         continue;
@@ -561,7 +560,7 @@ void Network::handle_message(
 
             auto& reg = MainLoop::get_registry();
             if (reg.valid(e))
-                reg.emplace_or_replace<me::cmp::net::Authority>(e).id = new_owner;
+                reg.emplace_or_replace<me::net::cmp::Authority>(e).id = new_owner;
             break;
         }
 

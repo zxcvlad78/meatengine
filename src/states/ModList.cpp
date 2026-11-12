@@ -1,29 +1,33 @@
-#include <meatengine/SystemRegistry.hpp>
-#include <meatengine/MainLoop.hpp>
-#include <meatengine/ModLoader.hpp>
-#include <meatengine/hierarchy.hpp>
-#include <meatengine/PackedEntity.hpp>
+#include <meatengine/ecs/SystemRegistry.hpp>
+#include <meatengine/app/MainLoop.hpp>
+#include <meatengine/app/GameStateRegistry.hpp>
+#include <meatengine/modding/ModLoader.hpp>
+#include <meatengine/hierarchy/hierarchy.hpp>
+#include <meatengine/ecs/PackedEntity.hpp>
 
-#include <meatengine/cmp/Transform.hpp>
-#include <meatengine/cmp/Children.hpp>
-#include <meatengine/cmp/GlobalZIndex.hpp>
+#include <meatengine/spatial/cmp/Transform.hpp>
+#include <meatengine/hierarchy/cmp/Children.hpp>
+#include <meatengine/abstract/cmp/GlobalZIndex.hpp>
 
-#include <meatengine/cmp/ui/UIRoot.hpp>
-#include <meatengine/cmp/ui/Node.hpp>
-#include <meatengine/cmp/ui/FlexStyle.hpp>
-#include <meatengine/cmp/ui/FillRect.hpp>
-#include <meatengine/cmp/ui/Label.hpp>
-#include <meatengine/cmp/ui/BackgroundColor.hpp>
-#include <meatengine/cmp/ui/BorderColor.hpp>
-#include <meatengine/cmp/ui/BorderWidth.hpp>
-#include <meatengine/cmp/ui/OnEvent.hpp>
-#include <meatengine/cmp/ui/Focusable.hpp>
+#include <meatengine/ui/helpers.hpp>
+#include <meatengine/ui/cmp/UIRoot.hpp>
+#include <meatengine/ui/cmp/Node.hpp>
+#include <meatengine/ui/cmp/FlexStyle.hpp>
+#include <meatengine/ui/cmp/FillRect.hpp>
+#include <meatengine/ui/cmp/Label.hpp>
+#include <meatengine/ui/cmp/BackgroundColor.hpp>
+#include <meatengine/ui/cmp/BorderColor.hpp>
+#include <meatengine/ui/cmp/BorderWidth.hpp>
+#include <meatengine/ui/cmp/OnEvent.hpp>
+#include <meatengine/ui/cmp/Focusable.hpp>
 
 #include <godlike/states/ModList.hpp>
 
 using namespace me;
-using namespace me::cmp;
-using namespace me::cmp::ui;
+using namespace me::spatial::cmp;
+using namespace me::hierarchy::cmp;
+using namespace me::abstract::cmp;
+using namespace me::ui::cmp;
 
 std::string selected_mod;
 
@@ -101,7 +105,7 @@ void ModList::on_enter(sf::RenderWindow&, entt::registry& r) {
 
         auto mi_name = mi.name;
 
-        hierarchy::set_button_text(r, row, mi.name + " " + mi.version.to_string());
+        ui::set_button_text(r, row, mi.name + " " + mi.version.to_string());
         hierarchy::set_parent(r, row, panel);
 
         if (auto* n = r.try_get<Node>(row)) {
@@ -126,7 +130,7 @@ void ModList::on_enter(sf::RenderWindow&, entt::registry& r) {
     }
 
     auto back_btn = PackedEntity::spawn("core:ui:button", r);
-    hierarchy::set_button_text(r, back_btn, "Back");
+    ui::set_button_text(r, back_btn, "Back");
     if (back_btn != entt::null) {
         hierarchy::set_parent(r, back_btn, panel);
         if (auto* n = r.try_get<Node>(back_btn)) {
@@ -146,7 +150,7 @@ void ModList::on_enter(sf::RenderWindow&, entt::registry& r) {
     }
 
     auto reload_btn = PackedEntity::spawn("core:ui:button", r);
-    hierarchy::set_button_text(r, reload_btn, "Reload");
+    ui::set_button_text(r, reload_btn, "Reload");
     if (reload_btn != entt::null) {
         hierarchy::set_parent(r, reload_btn, panel);
         if (auto* n = r.try_get<Node>(reload_btn)) {

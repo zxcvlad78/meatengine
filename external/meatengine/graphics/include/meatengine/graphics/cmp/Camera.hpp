@@ -2,7 +2,7 @@
 #include <entt/entt.hpp>
 #include <SFML/Graphics.hpp>
 
-namespace me::cmp {
+namespace me::graphics::cmp {
     struct Camera {
     private:
         bool current = true;

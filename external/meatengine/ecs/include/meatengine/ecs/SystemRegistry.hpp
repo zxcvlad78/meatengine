@@ -1,6 +1,5 @@
 #pragma once
-#include <meatengine/SystemPhase.hpp>
-#include <SFML/Graphics/RenderWindow.hpp>
+#include <meatengine/ecs/SystemPhase.hpp>
 #include <entt/entt.hpp>
 #include <string>
 #include <functional>

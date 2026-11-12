@@ -1,5 +1,5 @@
 #include <string>
-#include <meatengine/lua/LuaBinder.hpp>
+#include <meatengine/scripting/LuaBinder.hpp>
 
 static void bind(sol::state& lua) {
     

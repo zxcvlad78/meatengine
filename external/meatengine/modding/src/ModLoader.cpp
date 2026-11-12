@@ -1,5 +1,5 @@
-#include <meatengine/ModLoader.hpp>
-#include <meatengine/ScriptingServer.hpp>
+#include <meatengine/modding/ModLoader.hpp>
+#include <meatengine/scripting/ScriptingServer.hpp>
 
 #include <algorithm>
 #include <filesystem>

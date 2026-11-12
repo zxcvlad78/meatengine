@@ -2,10 +2,10 @@
 
 #include <optional>
 #include <SFML/Graphics/Sprite.hpp>
-#include <meatengine/Resources.hpp>
-#include <meatengine/ResourceLoader.hpp>
+#include <meatengine/assets/Resources.hpp>
+#include <meatengine/assets/ResourceLoader.hpp>
 
-namespace me::cmp {
+namespace me::graphics::cmp {
     struct Sprite {
     private:
         std::optional<sf::Sprite> _sprite;

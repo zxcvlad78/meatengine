@@ -1,13 +1,13 @@
-#include <meatengine/SystemRegistry.hpp>
-#include <meatengine/MainLoop.hpp>
+﻿#include <meatengine/ecs/SystemRegistry.hpp>
+#include <meatengine/app/MainLoop.hpp>
 #include <meatengine/net/Network.hpp>
 
-#include <meatengine/console/Console.hpp>
+#include <meatengine/debug/Console.hpp>
 
 #include <godlike/cmp/MoveSpeed.hpp>
 #include <godlike/cmp/PlayerInput.hpp>
-#include <meatengine/cmp/Velocity.hpp>
-#include <meatengine/cmp/net/Authority.hpp>
+#include <meatengine/physics/cmp/Velocity.hpp>
+#include <meatengine/net/cmp/Authority.hpp>
 
 static void player_input() {
 	auto& reg = me::MainLoop::get_registry();
@@ -15,7 +15,7 @@ static void player_input() {
 
 	if (!window.hasFocus()) return;
 
-	auto view = reg.view<godlike::cmp::MoveSpeed, me::cmp::Velocity, godlike::cmp::PlayerInput>();
+	auto view = reg.view<godlike::cmp::MoveSpeed, me::physics::cmp::Velocity, godlike::cmp::PlayerInput>();
 
 	for (auto [entity, movespeed, velocity] : view.each()) {
 		if (!me::net::Network::is_authority(entity)) continue;
@@ -23,7 +23,7 @@ static void player_input() {
 		velocity.linear.x = 0.0f;
 		velocity.linear.y = 0.0f;
 
-		if (me::Console::get_instance().is_visible()) { continue; }
+		if (me::debug::Console::get_instance().is_visible()) { continue; }
 		
 		velocity.linear.y -= sf::Keyboard::isKeyPressed(sf::Keyboard::Key::W);
 		velocity.linear.y += sf::Keyboard::isKeyPressed(sf::Keyboard::Key::S);

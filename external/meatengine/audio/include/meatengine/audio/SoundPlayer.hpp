@@ -1,7 +1,7 @@
 #pragma once
 
-#include <meatengine/ResourceLoader.hpp>
-#include <meatengine/Resources.hpp>
+#include <meatengine/assets/ResourceLoader.hpp>
+#include <meatengine/assets/Resources.hpp>
 
 #undef max
 

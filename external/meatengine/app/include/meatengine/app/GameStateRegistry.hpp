@@ -1,6 +1,6 @@
 #pragma once
 
-#include <meatengine/GameState.hpp>
+#include <meatengine/app/GameState.hpp>
 #include <functional>
 #include <memory>
 #include <string>

@@ -11,7 +11,7 @@
 #include <iostream>
 #include "nlohmann/json.hpp"
 #include <entt/resource/cache.hpp>
-#include <meatengine/parsing.hpp>
+#include <meatengine/core/parsing.hpp>
 
 using json = nlohmann::json;
 

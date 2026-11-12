@@ -1,7 +1,7 @@
-#include <meatengine/SystemRegistry.hpp>
-#include <meatengine/MainLoop.hpp>
+#include <meatengine/ecs/SystemRegistry.hpp>
+#include <meatengine/app/MainLoop.hpp>
 
-//#include <meatengine/cmp/.hpp>
+//#include <meatengine/<module>/cmp/.hpp>
 
 
 namespace me {

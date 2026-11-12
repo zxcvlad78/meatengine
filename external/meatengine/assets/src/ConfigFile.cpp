@@ -1,5 +1,5 @@
-#include <meatengine/config_file/ConfigFile.hpp>
-#include <meatengine/FileSystem.hpp>
+#include <meatengine/assets/ConfigFile.hpp>
+#include <meatengine/assets/FileSystem.hpp>
 #include <filesystem>
 
 namespace me {

@@ -1,6 +1,6 @@
 #pragma once
 #include <entt/entity/entity.hpp>
 
-namespace me::cmp {
+namespace me::hierarchy::cmp {
     struct Children { std::vector<entt::entity> entities; };
 }

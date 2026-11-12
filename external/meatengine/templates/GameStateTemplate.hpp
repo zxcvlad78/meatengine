@@ -1,5 +1,5 @@
 #pragma once
-#include <meatengine/meatengine.hpp>
+#include <meatengine/app/GameState.hpp>
 
 namespace name {
 

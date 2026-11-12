@@ -1,6 +1,6 @@
 #pragma once
 #include <SFML/Graphics/Rect.hpp>
 
-namespace me::cmp {
+namespace me::spatial::cmp {
     struct GlobalBounds { sf::FloatRect rect; };
 }

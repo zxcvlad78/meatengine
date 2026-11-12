@@ -1,5 +1,5 @@
-#include <meatengine/GameStateRegistry.hpp>
-#include <meatengine/MainLoop.hpp>
+#include <meatengine/app/GameStateRegistry.hpp>
+#include <meatengine/app/MainLoop.hpp>
 
 #include <iostream>
 

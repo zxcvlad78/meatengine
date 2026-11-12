@@ -1,6 +1,6 @@
 #pragma once
     
-namespace me::cmp {
+namespace me::graphics::cmp {
     struct Visibility {
         bool value = true;
         bool inherit = true;

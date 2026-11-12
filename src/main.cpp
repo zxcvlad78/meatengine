@@ -1,7 +1,8 @@
 #include <iostream>
 
-#include <meatengine/meatengine.hpp>
-#include <meatengine/SystemRegistry.hpp>
+#include <meatengine/app/App.hpp>
+#include <meatengine/app/MainLoop.hpp>
+#include <meatengine/ecs/SystemRegistry.hpp>
 #include <godlike/states/MainMenu.hpp>
 #include <godlike/states/ModList.hpp>
 

@@ -3,7 +3,7 @@
 
 #include <meatengine/net/Protocol.hpp>
 
-namespace me::cmp::net {
+namespace me::net::cmp {
     struct Authority {
         me::net::PeerId id = 0;
     };

@@ -1,5 +1,5 @@
-#include <meatengine/bbcode.hpp>
-#include <meatengine/parsing.hpp>
+#include <meatengine/core/bbcode.hpp>
+#include <meatengine/core/parsing.hpp>
 
 namespace me::BBCode {
     std::vector<TextFragment> parse(const std::string& input, unsigned int default_size) {

@@ -1,4 +1,4 @@
-#include <meatengine/SystemRegistry.hpp>
+#include <meatengine/ecs/SystemRegistry.hpp>
 
 #include <iostream>
 #include <vector>

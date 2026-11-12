@@ -1,4 +1,4 @@
-#include <meatengine/PackedEntity.hpp>
+#include <meatengine/ecs/PackedEntity.hpp>
 #include <stdexcept>
 #include <iostream>
 

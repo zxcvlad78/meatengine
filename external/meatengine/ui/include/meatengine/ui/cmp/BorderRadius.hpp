@@ -1,6 +1,6 @@
 #pragma once
 
-namespace me::cmp::ui {
+namespace me::ui::cmp {
     struct BorderRadius {
         float top_left = 0.f;
         float top_right = 0.f;
