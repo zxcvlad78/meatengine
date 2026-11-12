@@ -10,15 +10,17 @@
 #include <meatengine/net/cmp/Authority.hpp>
 #include <meatengine/ecs/PackedEntity.hpp>
 
+#include <meatengine/spatial/cmp/Transform.hpp>
+
 static void player_input() {
 	auto& reg = me::MainLoop::get_registry();
 	auto& window = me::MainLoop::get_window();
 
 	if (!window.hasFocus()) return;
 
-	auto view = reg.view<godlike::cmp::MoveSpeed, me::physics::cmp::Velocity, godlike::cmp::PlayerInput>();
+	auto view = reg.view<godlike::cmp::MoveSpeed, me::physics::cmp::Velocity, me::spatial::cmp::Transform, godlike::cmp::PlayerInput>();
 
-	for (auto [entity, movespeed, velocity] : view.each()) {
+	for (auto [entity, movespeed, velocity, transform] : view.each()) {
 		if (!me::net::Network::is_authority(entity)) continue;
 
 		velocity.linear.x = 0.0f;
@@ -34,7 +36,6 @@ static void player_input() {
 		velocity.linear.x *= movespeed.value;
 		velocity.linear.y *= movespeed.value;
 
-		if (velocity.linear.x == 0.0f && velocity.linear.y == 0.0f) continue;
 		if (velocity.linear.x != 0.0f && velocity.linear.y != 0.0f) {
 			velocity.linear.x *= 0.70710678118f;
 			velocity.linear.y *= 0.70710678118f;
@@ -66,15 +67,22 @@ static void player_input() {
 
 		}
 
-		if (direction.x != 0.0f && direction.y != 0.0f)
+		if (direction.x != 0.0f || direction.y != 0.0f)
 		{
 			auto bullet_entity = me::PackedEntity::spawn("godlike:bullet", reg);
+            if (auto* tr = reg.try_get<me::spatial::cmp::Transform>(bullet_entity))
+            {
+                tr->position = transform.position;
+            }
+
 			auto* bullet_velocity = reg.try_get<me::physics::cmp::Velocity>(bullet_entity);
 			if (bullet_velocity != nullptr)
 			{
-				bullet_velocity->linear.x = direction.x * 100.0f;
-				bullet_velocity->linear.y = direction.y * 100.0f;
+				bullet_velocity->linear.x = direction.x * 400.0f;
+				bullet_velocity->linear.y = direction.y * 400.0f;
 			}
+
+
 
 		}
 		
