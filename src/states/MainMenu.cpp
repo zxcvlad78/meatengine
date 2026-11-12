@@ -44,8 +44,9 @@ ConfigFile* config = new ConfigFile("user://states/main_menu.cfg");
 std::string connection_address;
 
 void load_cfg() {
+    connection_address = "127.0.0.1:2302";
+    return;
     config->load();
-    connection_address = config->get("connection_address", "127.0.0.1:2302");
 }
 
 namespace godlike::states {

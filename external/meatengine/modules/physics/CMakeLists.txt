@@ -1,3 +1,5 @@
+find_package(EnTT CONFIG REQUIRED)
+
 add_library(meatengine_physics STATIC
     src/physics.cpp
     src/systems/movement.cpp
@@ -14,7 +16,7 @@ target_link_libraries(meatengine_physics PUBLIC
     meatengine_app
     meatengine_ecs
     meatengine_spatial
-    EnTT
+    EnTT::EnTT
 )
 
 meatengine_require(app)

@@ -8,6 +8,7 @@
 #include <godlike/cmp/PlayerInput.hpp>
 #include <meatengine/physics/cmp/Velocity.hpp>
 #include <meatengine/net/cmp/Authority.hpp>
+#include <meatengine/ecs/PackedEntity.hpp>
 
 static void player_input() {
 	auto& reg = me::MainLoop::get_registry();
@@ -37,6 +38,44 @@ static void player_input() {
 		if (velocity.linear.x != 0.0f && velocity.linear.y != 0.0f) {
 			velocity.linear.x *= 0.70710678118f;
 			velocity.linear.y *= 0.70710678118f;
+		}
+
+
+		sf::Vector2f direction;
+
+		if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Right))
+		{
+			direction.x = 1.0f;
+		}
+
+		if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Left))
+		{
+			direction.x = -1.0f;
+
+		}
+
+		if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Up))
+		{
+			direction.y = 1.0f;
+
+		}
+
+		if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Down))
+		{
+			direction.y = -1.0f;
+
+		}
+
+		if (direction.x != 0.0f && direction.y != 0.0f)
+		{
+			auto bullet_entity = me::PackedEntity::spawn("godlike:bullet", reg);
+			auto* bullet_velocity = reg.try_get<me::physics::cmp::Velocity>(bullet_entity);
+			if (bullet_velocity != nullptr)
+			{
+				bullet_velocity->linear.x = direction.x * 100.0f;
+				bullet_velocity->linear.y = direction.y * 100.0f;
+			}
+
 		}
 		
 	}

@@ -3,6 +3,7 @@ PackedEntity.register("core:player", function(world)
     world:add_Transform(e)
     world:add_Velocity(e)
     world:add_PlayerInput(e)
+    world:add_Health(e)
     local sp = world:add_Sprite(e)
     sp.center = true
     sp.texture = ResourceLoader.load_Texture("data/core/res/textures/player0.png")

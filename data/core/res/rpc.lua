@@ -29,3 +29,4 @@ Rpc.bind("core:chat", function(ctx, r)
     end
 end)
 
+
