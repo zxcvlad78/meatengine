@@ -26,6 +26,10 @@
 #include <meatengine/ui/cmp/Focusable.hpp>
 #include <meatengine/ui/cmp/OnEvent.hpp>
 
+#include <meatengine/ui/widgets/button.hpp>
+#include <meatengine/ui/widgets/panel.hpp>
+#include <meatengine/ui/widgets/label.hpp>
+
 #include <meatengine/net/Network.hpp>
 
 #include <godlike/states/MainMenu.hpp>
@@ -73,6 +77,7 @@ void MainMenu::on_enter(sf::RenderWindow&, entt::registry& r) {
 
     auto title = PackedEntity::spawn("core:ui:title", r);
     hierarchy::set_parent(r, title, bg);
+    ui::set_label_text(r, title, "Godlike");
 
     auto host_btn = PackedEntity::spawn("core:ui:button", r);
     auto conn_btn = PackedEntity::spawn("core:ui:button", r);
@@ -84,13 +89,13 @@ void MainMenu::on_enter(sf::RenderWindow&, entt::registry& r) {
     }
 
     hierarchy::set_parent(r, host_btn, bg);
-    ui::set_button_text(r, host_btn, "Host");
+    ui::set_text(r, host_btn, "Host");
 
     hierarchy::set_parent(r, conn_btn, bg);
-    ui::set_button_text(r, conn_btn, "Connect");
+    ui::set_text(r, conn_btn, "Connect");
 
     hierarchy::set_parent(r, mods_btn, bg);
-    ui::set_button_text(r, mods_btn, "Mods");
+    ui::set_text(r, mods_btn, "Mods");
 
     for (auto btn : { mods_btn, host_btn, conn_btn }) {
         if (auto* n = r.try_get<Node>(btn)) {
@@ -126,7 +131,7 @@ void MainMenu::on_enter(sf::RenderWindow&, entt::registry& r) {
                 GameStateRegistry::change_to("godlike:mod_list");
             }
         };
-}`
+}
 
 void MainMenu::handle_event(sf::RenderWindow&, entt::registry&, const sf::Event&) {}
 

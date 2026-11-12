@@ -21,6 +21,10 @@
 #include <meatengine/ui/cmp/OnEvent.hpp>
 #include <meatengine/ui/cmp/Focusable.hpp>
 
+#include <meatengine/ui/widgets/button.hpp>
+#include <meatengine/ui/widgets/panel.hpp>
+#include <meatengine/ui/widgets/label.hpp>
+
 #include <godlike/states/ModList.hpp>
 
 using namespace me;
@@ -105,7 +109,7 @@ void ModList::on_enter(sf::RenderWindow&, entt::registry& r) {
 
         auto mi_name = mi.name;
 
-        ui::set_button_text(r, row, mi.name + " " + mi.version.to_string());
+        ui::set_text(r, row, mi.name + " " + mi.version.to_string());
         hierarchy::set_parent(r, row, panel);
 
         if (auto* n = r.try_get<Node>(row)) {
@@ -130,7 +134,7 @@ void ModList::on_enter(sf::RenderWindow&, entt::registry& r) {
     }
 
     auto back_btn = PackedEntity::spawn("core:ui:button", r);
-    ui::set_button_text(r, back_btn, "Back");
+    ui::set_text(r, back_btn, "Back");
     if (back_btn != entt::null) {
         hierarchy::set_parent(r, back_btn, panel);
         if (auto* n = r.try_get<Node>(back_btn)) {
@@ -150,7 +154,7 @@ void ModList::on_enter(sf::RenderWindow&, entt::registry& r) {
     }
 
     auto reload_btn = PackedEntity::spawn("core:ui:button", r);
-    ui::set_button_text(r, reload_btn, "Reload");
+    ui::set_text(r, reload_btn, "Reload");
     if (reload_btn != entt::null) {
         hierarchy::set_parent(r, reload_btn, panel);
         if (auto* n = r.try_get<Node>(reload_btn)) {

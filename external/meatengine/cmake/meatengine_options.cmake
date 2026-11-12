@@ -25,3 +25,12 @@ function(meatengine_set_target_options target)
         )
     endif()
 endfunction()
+
+function(meatengine_require module)
+    if(NOT module IN_LIST MEATENGINE_MODULES)
+        get_filename_component(current_module "${CMAKE_CURRENT_SOURCE_DIR}" NAME)
+        message(FATAL_ERROR
+            "meatengine: module '${current_module}' requires module '${module}'. "
+            "Add '${module}' to MEATENGINE_MODULES or remove '${current_module}'.")
+    endif()
+endfunction()
