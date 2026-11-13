@@ -3,7 +3,6 @@
 #include <entt/entt.hpp>
 
 #include <cstdint>
-#include <functional>
 #include <string>
 #include <vector>
 
@@ -18,11 +17,36 @@ struct ReplicatedComponent {
     std::string name;
     entt::id_type id = entt::null;
 
-    std::function<void(BinaryWriter&, entt::registry&, entt::entity)> write;
-    std::function<bool(BinaryReader&, entt::registry&, entt::entity)> read;
-    std::function<bool(BinaryReader&)> skip;
-    std::function<bool(entt::registry&, entt::entity)> has;
+    void (*write)(BinaryWriter&, entt::registry&, entt::entity) = nullptr;
+    bool (*read)(BinaryReader&, entt::registry&, entt::entity) = nullptr;
+    bool (*skip)(BinaryReader&) = nullptr;
+    bool (*has)(entt::registry&, entt::entity) = nullptr;
 };
+
+template<typename T>
+void write_component(BinaryWriter& w, entt::registry& r, entt::entity e) {
+    serialize(w, r.get<T>(e));
+}
+
+template<typename T>
+bool read_component(BinaryReader& r, entt::registry& reg, entt::entity e) {
+    T tmp{};
+    if (!deserialize(r, tmp)) return false;
+    if (auto* ex = reg.try_get<T>(e)) *ex = std::move(tmp);
+    else reg.emplace<T>(e, std::move(tmp));
+    return true;
+}
+
+template<typename T>
+bool skip_component(BinaryReader& r) {
+    T tmp{};
+    return deserialize(r, tmp);
+}
+
+template<typename T>
+bool has_component(entt::registry& r, entt::entity e) {
+    return r.all_of<T>(e);
+}
 
 class Replication {
 public:
@@ -36,26 +60,10 @@ public:
         c.name = name;
         c.id = entt::type_hash<T>::value();
 
-        c.write = [](BinaryWriter& w, entt::registry& r, entt::entity e) {
-            serialize(w, r.get<T>(e));
-        };
-
-        c.read = [](BinaryReader& r, entt::registry& reg, entt::entity e) -> bool {
-            T tmp{};
-            if (!deserialize(r, tmp)) return false;
-            if (auto* ex = reg.try_get<T>(e)) *ex = std::move(tmp);
-            else reg.emplace<T>(e, std::move(tmp));
-            return true;
-        };
-
-        c.skip = [](BinaryReader& r) -> bool {
-            T tmp{};
-            return deserialize(r, tmp);
-        };
-
-        c.has = [](entt::registry& r, entt::entity e) {
-            return r.all_of<T>(e);
-        };
+        c.write = &write_component<T>;
+        c.read = &read_component<T>;
+        c.skip = &skip_component<T>;
+        c.has = &has_component<T>;
 
         components().push_back(std::move(c));
     }

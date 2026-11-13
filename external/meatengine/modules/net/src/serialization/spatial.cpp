@@ -32,6 +32,6 @@ namespace me::net {
         return true;
     }
 
-} // namespace me::net
+}
 
 ME_REGISTER_NET_CMP(Transform, me::spatial::cmp::Transform)

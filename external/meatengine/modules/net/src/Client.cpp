@@ -1,4 +1,5 @@
 #include <meatengine/net/Client.hpp>
+
 #include <cassert>
 #include <cstdio>
 
@@ -9,7 +10,8 @@ Client* Client::s_pCallbackInstance = nullptr;
 Client::Client()
     : NetworkPeer()
     , m_hConnection(k_HSteamNetConnection_Invalid)
-    , m_connected(false) {
+    , m_connected(false)
+{
 }
 
 Client::~Client() {
@@ -64,10 +66,14 @@ void Client::Update() {
 }
 
 bool Client::Send(const void* data, uint32_t size, bool reliable) {
+    return Send(data, size, reliable ? SendFlag::Reliable : SendFlag::Unreliable);
+}
+
+bool Client::Send(const void* data, uint32_t size, SendFlag flag) {
     if (!m_connected || !m_pInterface || m_hConnection == k_HSteamNetConnection_Invalid) {
         return false;
     }
-    int flags = reliable ? k_nSteamNetworkingSend_Reliable : k_nSteamNetworkingSend_Unreliable;
+    const int flags = gns_flag(flag);
     return m_pInterface->SendMessageToConnection(m_hConnection, data, size, flags, nullptr) == k_EResultOK;
 }
 
@@ -95,12 +101,16 @@ void Client::OnConnectionStateChange(SteamNetConnectionStatusChangedCallback_t* 
         case k_ESteamNetworkingConnectionState_Connecting:
             break;
 
-        case k_ESteamNetworkingConnectionState_Connected:
+        case k_ESteamNetworkingConnectionState_Connected: {
             m_connected = true;
+
+            ApplyConnectionTuning(pInfo->m_hConn);
+
             if (m_onConnected) {
                 m_onConnected();
             }
             break;
+        }
 
         default:
             break;
@@ -108,22 +118,25 @@ void Client::OnConnectionStateChange(SteamNetConnectionStatusChangedCallback_t* 
 }
 
 void Client::OnIncomingMessage(ConnectionID conn, const void* data, uint32_t size) {
+    (void)conn;
     if (m_onMessage) {
         m_onMessage(data, size);
     }
 }
 
 void Client::PollIncomingMessages() {
-    ISteamNetworkingMessage* pMsg = nullptr;
-    int numMsgs = m_pInterface->ReceiveMessagesOnConnection(m_hConnection, &pMsg, 1);
+    ISteamNetworkingMessage* messages[kMaxMessagesPerPoll];
+    int numMsgs = m_pInterface->ReceiveMessagesOnConnection(m_hConnection, messages, kMaxMessagesPerPoll);
     while (numMsgs > 0 && m_connected) {
         if (numMsgs < 0) {
             Log(LogLevel::Error, "ReceiveMessagesOnConnection error");
             break;
         }
-        OnIncomingMessage(m_hConnection, pMsg->m_pData, pMsg->m_cbSize);
-        pMsg->Release();
-        numMsgs = m_pInterface->ReceiveMessagesOnConnection(m_hConnection, &pMsg, 1);
+        for (int i = 0; i < numMsgs; ++i) {
+            OnIncomingMessage(m_hConnection, messages[i]->m_pData, messages[i]->m_cbSize);
+            messages[i]->Release();
+        }
+        numMsgs = m_pInterface->ReceiveMessagesOnConnection(m_hConnection, messages, kMaxMessagesPerPoll);
     }
 }
 

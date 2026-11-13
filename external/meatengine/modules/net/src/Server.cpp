@@ -1,4 +1,6 @@
 #include <meatengine/net/Server.hpp>
+
+#include <algorithm>
 #include <cassert>
 #include <cstdio>
 
@@ -10,7 +12,8 @@ Server::Server()
     : NetworkPeer()
     , m_hListenSocket(k_HSteamListenSocket_Invalid)
     , m_hPollGroup(k_HSteamNetPollGroup_Invalid)
-    , m_running(false) {
+    , m_running(false)
+{
 }
 
 Server::~Server() {
@@ -33,7 +36,7 @@ bool Server::Start(uint16_t port) {
 
     SteamNetworkingConfigValue_t opt;
     opt.SetPtr(k_ESteamNetworkingConfig_Callback_ConnectionStatusChanged, (void*)SteamNetConnectionStatusChangedCallback);
-    
+
     s_pCallbackInstance = this;
 
     m_hListenSocket = m_pInterface->CreateListenSocketIP(localAddr, 1, &opt);
@@ -67,6 +70,8 @@ void Server::Close() {
             m_pInterface->CloseConnection(pair.first, 0, "Server shutdown", true);
         }
         m_clients.clear();
+        m_conn_list.clear();
+        m_peer_by_conn.clear();
     }
 
     if (m_hListenSocket != k_HSteamListenSocket_Invalid) {
@@ -88,25 +93,42 @@ void Server::Update() {
 }
 
 bool Server::Send(const void* data, uint32_t size, bool reliable) {
-    Broadcast(data, size, k_HSteamNetConnection_Invalid, reliable);
+    Broadcast(data, size, k_HSteamNetConnection_Invalid,
+              reliable ? SendFlag::Reliable : SendFlag::Unreliable);
+    return true;
+}
+
+bool Server::Send(const void* data, uint32_t size, SendFlag flag) {
+    Broadcast(data, size, k_HSteamNetConnection_Invalid, flag);
     return true;
 }
 
 bool Server::SendToClient(ConnectionID client, const void* data, uint32_t size, bool reliable) {
+    return SendToClient(client, data, size, reliable ? SendFlag::Reliable : SendFlag::Unreliable);
+}
+
+bool Server::SendToClient(ConnectionID client, const void* data, uint32_t size, SendFlag flag) {
     if (!m_running || !m_pInterface) return false;
-    int flags = reliable ? k_nSteamNetworkingSend_Reliable : k_nSteamNetworkingSend_Unreliable;
+    const int flags = gns_flag(flag);
     return m_pInterface->SendMessageToConnection(client, data, size, flags, nullptr) == k_EResultOK;
 }
 
 void Server::Broadcast(const void* data, uint32_t size, ConnectionID exclude, bool reliable) {
-    std::vector<ConnectionID> ids;
+    Broadcast(data, size, exclude, reliable ? SendFlag::Reliable : SendFlag::Unreliable);
+}
+
+void Server::Broadcast(const void* data, uint32_t size, ConnectionID exclude, SendFlag flag) {
+    static thread_local std::vector<ConnectionID> scratch;
     {
         std::lock_guard<std::mutex> lock(m_clientMutex);
-        ids.reserve(m_clients.size());
-        for (auto& [id, _] : m_clients)
-            if (id != exclude) ids.push_back(id);
+        scratch.clear();
+        scratch.reserve(m_conn_list.size());
+        for (auto id : m_conn_list)
+            if (id != exclude) scratch.push_back(id);
     }
-    for (auto id : ids) SendToClient(id, data, size, reliable);
+
+    for (auto id : scratch)
+        SendToClient(id, data, size, flag);
 }
 
 void Server::Kick(ConnectionID client, const char* reason) {
@@ -117,10 +139,7 @@ void Server::Kick(ConnectionID client, const char* reason) {
 
 std::vector<ConnectionID> Server::GetConnectedClients() const {
     std::lock_guard<std::mutex> lock(m_clientMutex);
-    std::vector<ConnectionID> result;
-    result.reserve(m_clients.size());
-    for (auto& pair : m_clients) result.push_back(pair.first);
-    return result;
+    return m_conn_list;
 }
 
 size_t Server::GetClientCount() const {
@@ -136,6 +155,22 @@ bool Server::GetClientInfo(ConnectionID client, ClientInfo& outInfo) const {
     return true;
 }
 
+void Server::AssignPeer(ConnectionID conn, PeerId id) {
+    std::lock_guard<std::mutex> lock(m_clientMutex);
+    m_peer_by_conn[conn] = id;
+}
+
+void Server::UnassignPeer(ConnectionID conn) {
+    std::lock_guard<std::mutex> lock(m_clientMutex);
+    m_peer_by_conn.erase(conn);
+}
+
+PeerId Server::PeerOf(ConnectionID conn) const {
+    std::lock_guard<std::mutex> lock(m_clientMutex);
+    auto it = m_peer_by_conn.find(conn);
+    return it == m_peer_by_conn.end() ? kInvalidPeerId : it->second;
+}
+
 void Server::OnConnectionStateChange(SteamNetConnectionStatusChangedCallback_t* pInfo) {
     ConnectionID conn = pInfo->m_hConn;
 
@@ -145,15 +180,28 @@ void Server::OnConnectionStateChange(SteamNetConnectionStatusChangedCallback_t* 
 
         case k_ESteamNetworkingConnectionState_ClosedByPeer:
         case k_ESteamNetworkingConnectionState_ProblemDetectedLocally: {
-            std::lock_guard<std::mutex> lock(m_clientMutex);
-            auto it = m_clients.find(conn);
-            if (it != m_clients.end()) {
-                ClientInfo info = it->second;
-                m_clients.erase(it);
-                if (m_onDisconnected) {
-                    m_onDisconnected(conn, pInfo->m_info.m_eEndReason, pInfo->m_info.m_szEndDebug);
+            bool was_known = false;
+            {
+                std::lock_guard<std::mutex> lock(m_clientMutex);
+                auto it = m_clients.find(conn);
+                if (it != m_clients.end()) {
+                    m_clients.erase(it);
+                    was_known = true;
                 }
+                m_conn_list.erase(
+                    std::remove(m_conn_list.begin(), m_conn_list.end(), conn),
+                    m_conn_list.end()
+                );
             }
+
+            if (was_known && m_onDisconnected) {
+                m_onDisconnected(conn, pInfo->m_info.m_eEndReason, pInfo->m_info.m_szEndDebug);
+            }
+            {
+                std::lock_guard<std::mutex> lock(m_clientMutex);
+                m_peer_by_conn.erase(conn);
+            }
+
             m_pInterface->CloseConnection(conn, 0, nullptr, false);
             break;
         }
@@ -173,6 +221,7 @@ void Server::OnConnectionStateChange(SteamNetConnectionStatusChangedCallback_t* 
             {
                 std::lock_guard<std::mutex> lock(m_clientMutex);
                 m_clients[conn] = info;
+                m_conn_list.push_back(conn);
             }
             if (m_onConnected) {
                 m_onConnected(conn, info.address.c_str());
@@ -180,8 +229,10 @@ void Server::OnConnectionStateChange(SteamNetConnectionStatusChangedCallback_t* 
             break;
         }
 
-        case k_ESteamNetworkingConnectionState_Connected:
+        case k_ESteamNetworkingConnectionState_Connected: {
+            ApplyConnectionTuning(conn);
             break;
+        }
 
         default:
             break;
@@ -190,22 +241,23 @@ void Server::OnConnectionStateChange(SteamNetConnectionStatusChangedCallback_t* 
 
 void Server::OnIncomingMessage(ConnectionID conn, const void* data, uint32_t size) {
     if (m_onMessage) {
-        m_onMessage(conn, data, size);
+        m_onMessage(PeerOf(conn), conn, data, size);
     }
 }
 
 void Server::PollIncomingMessages() {
-    ISteamNetworkingMessage* pMsg = nullptr;
-    int numMsgs = m_pInterface->ReceiveMessagesOnPollGroup(m_hPollGroup, &pMsg, 1);
+    ISteamNetworkingMessage* messages[kMaxMessagesPerPoll];
+    int numMsgs = m_pInterface->ReceiveMessagesOnPollGroup(m_hPollGroup, messages, kMaxMessagesPerPoll);
     while (numMsgs > 0) {
         if (numMsgs < 0) {
             Log(LogLevel::Error, "ReceiveMessagesOnPollGroup error");
             break;
         }
-        ConnectionID sender = pMsg->m_conn;
-        OnIncomingMessage(sender, pMsg->m_pData, pMsg->m_cbSize);
-        pMsg->Release();
-        numMsgs = m_pInterface->ReceiveMessagesOnPollGroup(m_hPollGroup, &pMsg, 1);
+        for (int i = 0; i < numMsgs; ++i) {
+            OnIncomingMessage(messages[i]->m_conn, messages[i]->m_pData, messages[i]->m_cbSize);
+            messages[i]->Release();
+        }
+        numMsgs = m_pInterface->ReceiveMessagesOnPollGroup(m_hPollGroup, messages, kMaxMessagesPerPoll);
     }
 }
 

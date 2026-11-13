@@ -1,11 +1,12 @@
 #pragma once
 
-#include <steam/steamnetworkingsockets.h>
 #include <steam/isteamnetworkingutils.h>
+#include <steam/steamnetworkingsockets.h>
+
 #include <cstdint>
 #include <functional>
-#include <vector>
 #include <string>
+#include <vector>
 
 namespace me::net {
 
@@ -13,41 +14,49 @@ using ConnectionID = HSteamNetConnection;
 using ListenSocket = HSteamListenSocket;
 using PollGroup = HSteamNetPollGroup;
 
-constexpr uint16 kDefaultPort = 2302;
-constexpr int kMaxMessageSize = 4096;
+using PeerId = std::uint32_t;
 
-// Callback type for client connection event (server)
-//   connection - connection identifier of the new client
-//   remoteAddress - string with client address
+constexpr PeerId kInvalidPeerId = 0xFFFFFFFFu;
+constexpr PeerId kServerPeerId = 0u;
+
+constexpr std::uint16_t kDefaultPort = 2302;
+
+constexpr std::size_t kMaxMessageSize = 512 * 1024;
+
+constexpr int kMaxMessagesPerPoll = 256;
+
+
+
+
 using OnClientConnectedCallback = std::function<void(ConnectionID, const char*)>;
 
-// Callback type for client disconnection event (server)
-//   connection - connection identifier of the disconnected client
-//   reason - reason code
-//   debug - debug message
+
+
+
+
 using OnClientDisconnectedCallback = std::function<void(ConnectionID, int, const char*)>;
 
-// Callback type for receiving a message from a client (server)
-//   connection - sender
-//   data - pointer to data
-//   size - size of data in bytes
-using OnMessageReceivedCallback = std::function<void(ConnectionID, const void*, uint32_t)>;
 
-// Callback type for connection to server event (client)
+
+
+
+using OnMessageReceivedCallback = std::function<void(PeerId, ConnectionID, const void*, uint32_t)>;
+
+
 using OnConnectedCallback = std::function<void()>;
 
-// Callback type for disconnection from server event (client)
-//   reason - reason code
-//   debug - debug message
+
+
+
 using OnDisconnectedCallback = std::function<void(int, const char*)>;
 
-// Callback type for receiving a message from the server (client)
+
 using OnServerMessageCallback = std::function<void(const void*, uint32_t)>;
 
 struct ClientInfo {
-    ConnectionID id;
+    ConnectionID id = k_HSteamNetConnection_Invalid;
     std::string address;
-    // Custom data
+
 };
 
 }

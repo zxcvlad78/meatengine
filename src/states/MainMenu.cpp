@@ -111,6 +111,7 @@ void MainMenu::on_enter(sf::RenderWindow&, entt::registry& r) {
         [](entt::registry&, entt::entity, Event& ev) {
             if (ev.type == EventType::Click) {
                 me::net::Network::start_server(2302);
+                me::net::Network::set_batching(true);
                 ScriptedStateRegistry::change_to("core:world");
                 ev.handled = true;
             }
@@ -120,6 +121,7 @@ void MainMenu::on_enter(sf::RenderWindow&, entt::registry& r) {
         [](entt::registry&, entt::entity, Event& ev) {
             if (ev.type == EventType::Click) {
                 ev.handled = true;
+                me::net::Network::set_batching(true);
                 if (!me::net::Network::connect(connection_address)) return;
                 ScriptedStateRegistry::change_to("core:world");
             }

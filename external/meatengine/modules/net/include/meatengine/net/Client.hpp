@@ -1,7 +1,10 @@
 #pragma once
 
 #include "NetworkPeer.hpp"
+
 #include <string>
+
+#include <meatengine/net/Protocol.hpp>
 
 namespace me::net {
 
@@ -11,10 +14,11 @@ public:
     ~Client() override;
 
     bool Connect(const std::string& address);
-    void Close() override; 
+    void Close() override;
 
     void Update() override;
     bool Send(const void* data, uint32_t size, bool reliable = true) override;
+    bool Send(const void* data, uint32_t size, SendFlag flag);
     bool IsActive() const override { return m_connected; }
 
     ConnectionID GetConnectionID() const { return m_hConnection; }
@@ -41,4 +45,4 @@ private:
     static Client* s_pCallbackInstance;
 };
 
-} // namespace MeatNet
+}

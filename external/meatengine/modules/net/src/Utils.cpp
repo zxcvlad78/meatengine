@@ -16,6 +16,8 @@ namespace me::net {
 static LogCallback g_logCallback = nullptr;
 static bool g_bInitialized = false;
 static ISteamNetworkingSockets* g_pSockets = nullptr;
+static LogLevel g_logLevel = LogLevel::Warning;
+static std::uint32_t g_sendRate = 64 * 1024 * 1024;
 
 static void NukeProcess(int rc) {
 #ifdef _WIN32
@@ -57,7 +59,7 @@ bool InitNetwork() {
         return false;
     }
 #else
-    SteamDatagram_SetAppID(0xFF); // Set app id
+    SteamDatagram_SetAppID(0xFF);
     SteamDatagram_SetUniverse(false, k_EUniverseDev);
 
     SteamDatagramErrMsg errMsg;
@@ -67,9 +69,13 @@ bool InitNetwork() {
     }
 
     SteamNetworkingUtils()->SetGlobalConfigValueInt32(k_ESteamNetworkingConfig_IP_AllowWithoutAuth, 1);
+
+    SteamNetworkingUtils()->SetGlobalConfigValueInt32(k_ESteamNetworkingConfig_RecvBufferSize, 16 * 1024 * 1024);
+    SteamNetworkingUtils()->SetGlobalConfigValueInt32(k_ESteamNetworkingConfig_RecvBufferMessages, 8192);
 #endif
 
-    SteamNetworkingUtils()->SetDebugOutputFunction(k_ESteamNetworkingSocketsDebugOutputType_Msg, InternalDebugOutput);
+    SteamNetworkingUtils()->SetDebugOutputFunction(
+        static_cast<ESteamNetworkingSocketsDebugOutputType>(g_logLevel), InternalDebugOutput);
 
     g_pSockets = SteamNetworkingSockets();
     g_bInitialized = true;
@@ -94,6 +100,41 @@ void ShutdownNetwork() {
 
 void SetLogCallback(LogCallback cb) {
     g_logCallback = cb;
+}
+
+void SetLogLevel(LogLevel level) {
+    g_logLevel = level;
+    if (g_bInitialized)
+        SteamNetworkingUtils()->SetDebugOutputFunction(
+            static_cast<ESteamNetworkingSocketsDebugOutputType>(g_logLevel), InternalDebugOutput);
+}
+
+LogLevel GetLogLevel() {
+    return g_logLevel;
+}
+
+void SetSendRate(std::uint32_t bytes_per_sec) {
+    g_sendRate = bytes_per_sec;
+}
+
+std::uint32_t GetSendRate() {
+    return g_sendRate;
+}
+
+void ApplyConnectionTuning(ConnectionID conn) {
+    auto* utils = SteamNetworkingUtils();
+    if (!utils) return;
+
+    utils->SetConnectionConfigValueInt32(conn, k_ESteamNetworkingConfig_SendBufferSize, 16 * 1024 * 1024);
+
+    if (g_sendRate > 0) {
+        utils->SetConnectionConfigValueInt32(conn, k_ESteamNetworkingConfig_SendRateMin,
+                                             static_cast<int32_t>(g_sendRate));
+        utils->SetConnectionConfigValueInt32(conn, k_ESteamNetworkingConfig_SendRateMax,
+                                             static_cast<int32_t>(g_sendRate));
+    }
+
+    utils->SetConnectionConfigValueInt32(conn, k_ESteamNetworkingConfig_NagleTime, 0);
 }
 
 ISteamNetworkingSockets* GetSocketsInterface() {

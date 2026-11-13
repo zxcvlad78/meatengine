@@ -25,6 +25,12 @@ struct Entry {
     float last_sent = 0.f;
 };
 
+struct Candidate {
+    entt::entity entity;
+    std::uint32_t net_id;
+    std::uint64_t mask;
+};
+
 std::unordered_map<entt::entity, Entry>& cache() {
     static std::unordered_map<entt::entity, Entry> c;
     return c;
@@ -39,31 +45,47 @@ bool transform_changed(const me::spatial::cmp::Transform& a, const me::spatial::
         || std::abs(a.scale.y - b.scale.y) > eps;
 }
 
-void server_tick() {
+void collect(std::vector<Candidate>& out, bool authority_only) {
     auto& reg = MainLoop::get_registry();
     auto& c = cache();
     const float now = Network::now_ms() * 0.001f;
 
-    std::vector<entt::entity> candidates;
-    candidates.reserve(64);
-
     for (auto [e, t, nid] : reg.view<me::spatial::cmp::Transform, me::net::cmp::NetId>().each()) {
+        if (authority_only && !Network::is_authority(e)) continue;
+
         auto it = c.find(e);
         if (it == c.end()) {
             c[e] = Entry{ t, now };
-            candidates.push_back(e);
+            out.push_back(Candidate{ e, nid.value, Replication::mask_for(reg, e) });
             continue;
         }
-        bool changed = transform_changed(it->second.last, t);
-        bool keyframe = (now - it->second.last_sent) >= KEYFRAME_TIME;
+
+        const bool changed = transform_changed(it->second.last, t);
+        const bool keyframe = (now - it->second.last_sent) >= KEYFRAME_TIME;
         if (changed || keyframe) {
             it->second.last = t;
             it->second.last_sent = now;
-            candidates.push_back(e);
+            out.push_back(Candidate{ e, nid.value, Replication::mask_for(reg, e) });
         }
     }
+}
 
-    if (candidates.empty()) return;
+void prune() {
+    auto& reg = MainLoop::get_registry();
+    auto& c = cache();
+    for (auto it = c.begin(); it != c.end(); ) {
+        if (!reg.valid(it->first)) it = c.erase(it);
+        else ++it;
+    }
+}
+
+void server_tick() {
+    std::vector<Candidate> candidates;
+    candidates.reserve(64);
+    collect(candidates, false);
+    if (candidates.empty()) { prune(); return; }
+
+    auto& reg = MainLoop::get_registry();
 
     for (std::size_t base = 0; base < candidates.size(); base += BATCH) {
         const std::size_t n = std::min(BATCH, candidates.size() - base);
@@ -72,66 +94,36 @@ void server_tick() {
             [&](BinaryWriter& w) {
                 w.write(static_cast<uint32_t>(n));
                 for (std::size_t i = 0; i < n; ++i) {
-                    auto e = candidates[base + i];
-                    auto nid = reg.get<me::net::cmp::NetId>(e).value;
-                    auto mask = Replication::mask_for(reg, e);
-                    w.write(nid);
-                    w.write(mask);
-                    Replication::write_components(w, reg, e, mask);
+                    const Candidate& cand = candidates[base + i];
+                    w.write(cand.net_id);
+                    w.write(cand.mask);
+                    Replication::write_components(w, reg, cand.entity, cand.mask);
                 }
             });
     }
 
-    for (auto it = c.begin(); it != c.end(); ) {
-        if (!reg.valid(it->first)) it = c.erase(it);
-        else ++it;
-    }
+    prune();
 }
 
 void client_tick() {
-    auto& reg = MainLoop::get_registry();
-    auto& c = cache();
-    const float now = Network::now_ms() * 0.001f;
-
-    std::vector<entt::entity> to_send;
+    std::vector<Candidate> to_send;
     to_send.reserve(16);
+    collect(to_send, true);
+    if (to_send.empty()) { prune(); return; }
 
-    for (auto [e, t, nid] : reg.view<me::spatial::cmp::Transform, me::net::cmp::NetId>().each()) {
-        if (!Network::is_authority(e)) continue;
-
-        auto it = c.find(e);
-        if (it == c.end()) {
-            c[e] = Entry{ t, now };
-            to_send.push_back(e);
-            continue;
-        }
-        bool changed = transform_changed(it->second.last, t);
-        bool keyframe = (now - it->second.last_sent) >= KEYFRAME_TIME;
-        if (changed || keyframe) {
-            it->second.last = t;
-            it->second.last_sent = now;
-            to_send.push_back(e);
-        }
-    }
-
-    if (to_send.empty()) return;
+    auto& reg = MainLoop::get_registry();
 
     Network::send(kServerPeerId, MsgType::EntitySnapshot, SendFlag::Unreliable,
         [&](BinaryWriter& w) {
             w.write(static_cast<uint32_t>(to_send.size()));
-            for (auto e : to_send) {
-                auto nid  = reg.get<me::net::cmp::NetId>(e).value;
-                auto mask = Replication::mask_for(reg, e);
-                w.write(nid);
-                w.write(mask);
-                Replication::write_components(w, reg, e, mask);
+            for (const Candidate& cand : to_send) {
+                w.write(cand.net_id);
+                w.write(cand.mask);
+                Replication::write_components(w, reg, cand.entity, cand.mask);
             }
         });
 
-    for (auto it = c.begin(); it != c.end(); ) {
-        if (!reg.valid(it->first)) it = c.erase(it);
-        else ++it;
-    }
+    prune();
 }
 
 void tick() {

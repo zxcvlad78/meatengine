@@ -103,27 +103,42 @@ static void bind(sol::state& lua) {
 
     rpc.set_function("invoke",
         [](const std::string& name, sol::variadic_args va) {
+            const me::net::RpcId id = me::net::Rpc::id(name);
             me::net::Network::send(
                 me::net::MsgType::RpcCall,
                 me::net::SendFlag::Reliable,
-                [&](BinaryWriter& w) {
-                    w.write(static_cast<std::uint32_t>(0));
-                    w.write(name);
+                [&](me::net::BinaryWriter& w) {
+                    me::net::Rpc::write_call(w, id, 0);
                     for (auto v : va) write_lua_value(w, v);
                 });
+            me::net::Network::stats().rpcs_sent++;
         });
 
     rpc.set_function("invoke_on",
         [](me::net::PeerId target, const std::string& name, sol::variadic_args va) {
+            const me::net::RpcId id = me::net::Rpc::id(name);
             me::net::Network::send(
                 target,
                 me::net::MsgType::RpcCall,
                 me::net::SendFlag::Reliable,
-                [&](BinaryWriter& w) {
-                    w.write(static_cast<std::uint32_t>(0));
-                    w.write(name);
+                [&](me::net::BinaryWriter& w) {
+                    me::net::Rpc::write_call(w, id, 0);
                     for (auto v : va) write_lua_value(w, v);
                 });
+            me::net::Network::stats().rpcs_sent++;
+        });
+
+    rpc.set_function("invoke_unreliable",
+        [](const std::string& name, sol::variadic_args va) {
+            const me::net::RpcId id = me::net::Rpc::id(name);
+            me::net::Network::send(
+                me::net::MsgType::RpcCall,
+                me::net::SendFlag::UnreliableNoDelay,
+                [&](me::net::BinaryWriter& w) {
+                    me::net::Rpc::write_call(w, id, 0);
+                    for (auto v : va) write_lua_value(w, v);
+                });
+            me::net::Network::stats().rpcs_sent++;
         });
 
     rpc.set_function("broadcast", [](const std::string& name, sol::variadic_args va) {
@@ -198,6 +213,14 @@ static void bind(sol::state& lua) {
     );
 
     rpc.set_function("has", [](const std::string& name) { return me::net::Rpc::has(name); });
+
+    rpc.set_function("id", [](const std::string& name) { return me::net::Rpc::id(name); });
+
+    rpc.set_function("name_of", [](me::net::RpcId id) {
+        return std::string(me::net::Rpc::name_of(id));
+    });
+
+    rpc.set_function("unbind", [](const std::string& name) { me::net::Rpc::unbind(name); });
 }
 
 ME_LUA_BINDING(

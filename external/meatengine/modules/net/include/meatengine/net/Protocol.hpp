@@ -1,16 +1,15 @@
 #pragma once
+
 #include <cstdint>
+#include <string_view>
 #include <vector>
-#include <string>
-#include <meatengine/net/Types.hpp>
+
 #include <meatengine/net/Serialization.hpp>
+#include <meatengine/net/Types.hpp>
 
 namespace me::net {
 
-using PeerId = std::uint32_t;
-constexpr PeerId kInvalidPeerId = 0xFFFFFFFF;
-constexpr PeerId kServerPeerId = 0;
-constexpr std::uint32_t kProtocolVersion = 1;
+constexpr std::uint32_t kProtocolVersion = 2;
 
 struct PeerInfo {
     ConnectionID conn = k_HSteamNetConnection_Invalid;
@@ -22,7 +21,8 @@ enum class SendFlag : std::uint8_t {
     Unreliable = 0,
     UnreliableNoNagle,
     Reliable,
-    ReliableNoNagle
+    ReliableNoNagle,
+    UnreliableNoDelay,
 };
 
 inline int gns_flag(SendFlag f) {
@@ -31,8 +31,13 @@ inline int gns_flag(SendFlag f) {
         case SendFlag::UnreliableNoNagle: return k_nSteamNetworkingSend_UnreliableNoNagle;
         case SendFlag::Reliable: return k_nSteamNetworkingSend_Reliable;
         case SendFlag::ReliableNoNagle: return k_nSteamNetworkingSend_ReliableNoNagle;
+        case SendFlag::UnreliableNoDelay: return k_nSteamNetworkingSend_UnreliableNoDelay;
     }
     return k_nSteamNetworkingSend_Reliable;
+}
+
+inline bool is_reliable(SendFlag f) {
+    return f == SendFlag::Reliable || f == SendFlag::ReliableNoNagle;
 }
 
 enum class MsgType : std::uint8_t {
@@ -49,6 +54,10 @@ enum class MsgType : std::uint8_t {
 
     RpcCall,
     RpcReply,
+
+    Batch,
+
+    Count
 };
 
 inline const char* to_string(MsgType t) {
@@ -64,53 +73,46 @@ inline const char* to_string(MsgType t) {
         case MsgType::EntityAuthority: return "EntityAuthority";
         case MsgType::RpcCall: return "RpcCall";
         case MsgType::RpcReply: return "RpcReply";
+        case MsgType::Batch: return "Batch";
+        case MsgType::Count: return "Count";
     }
     return "unknown";
 }
 
-inline void write_envelope(
-    BinaryWriter& w,
-    MsgType type,
-    SendFlag send_flag,
-    std::uint32_t seq,
-    const std::vector<std::uint8_t>& payload
-) {
-    w.write(static_cast<std::uint8_t>(type));
-    w.write(static_cast<std::uint8_t>(send_flag));
-    w.write(seq);
-    w.write(static_cast<std::uint16_t>(payload.size()));
-    if (!payload.empty())
-        w.write(payload.data(), payload.size());
+
+using RpcId = std::uint32_t;
+
+constexpr RpcId kInvalidRpcId = 0;
+
+inline RpcId rpc_id(std::string_view name) noexcept {
+    std::uint32_t h = 2166136261u;
+    for (char c : name) {
+        h ^= static_cast<std::uint8_t>(c);
+        h *= 16777619u;
+    }
+    return h == 0 ? 1u : h;
 }
- 
+
+
+constexpr std::size_t kDefaultMaxBatchBytes = 48 * 1024;
+
 struct Envelope {
     MsgType type = MsgType::Handshake;
     SendFlag send_flag = SendFlag::Reliable;
     std::uint32_t seq = 0;
-    std::uint16_t size = 0;
 };
 
-inline void write_envelope(
-    BinaryWriter& w,
-    const Envelope& env,
-    const std::vector<std::uint8_t>& payload
-) {
-    w.write(static_cast<std::uint8_t>(env.type));
-    w.write(static_cast<std::uint8_t>(env.send_flag));
-    w.write(env.seq);
-    w.write(static_cast<std::uint16_t>(payload.size()));
-    if (!payload.empty()) w.write(payload.data(), payload.size());
-}
+constexpr std::size_t kEnvelopeHeaderSize = 6;
 
-inline bool read_envelope(BinaryReader& r, Envelope& out) {
-    std::uint8_t t, c;
-    if (!r.read(t)) return false;
-    if (!r.read(c)) return false;
-    if (!r.read(out.seq)) return false;
-    if (!r.read(out.size)) return false;
-    out.type = static_cast<MsgType>(t);
-    out.send_flag = static_cast<SendFlag>(c);
-    return true;
-}
+void patch_envelope(
+    std::uint8_t* dst,
+    MsgType type,
+    SendFlag flag,
+    std::uint32_t seq
+);
 
-} // namespace me::net
+void write_envelope(BinaryWriter& w, const Envelope& env);
+
+bool read_envelope(BinaryReader& r, Envelope& out);
+
+}

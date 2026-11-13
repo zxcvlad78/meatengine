@@ -34,4 +34,4 @@ protected:
     void Log(LogLevel level, const char* msg);
 };
 
-} // namespace MeatNet
+}

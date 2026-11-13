@@ -1,5 +1,5 @@
-#include <meatengine/net/Rpc.hpp>
 #include <meatengine/net/Network.hpp>
+#include <meatengine/net/Rpc.hpp>
 
 #include <cstdio>
 #include <stdexcept>
@@ -7,114 +7,169 @@
 
 namespace me::net {
 
-std::unordered_map<std::string, RpcHandler>& Rpc::handlers() {
-    static std::unordered_map<std::string, RpcHandler> h;
-    return h;
+namespace {
+
+struct Registry {
+    std::unordered_map<RpcId, RpcHandler> handlers;
+    std::unordered_map<RpcId, std::string> names;
+};
+
+Registry& registry() {
+    static Registry r;
+    return r;
 }
 
-std::unordered_map<std::uint32_t, PendingRpc>& Rpc::pending() {
+std::unordered_map<std::uint32_t, PendingRpc>& pending_map() {
     static std::unordered_map<std::uint32_t, PendingRpc> p;
     return p;
 }
 
-std::uint32_t Rpc::next_request_id() { return _next_id++; }
+std::uint64_t g_unknown_calls = 0;
 
-void Rpc::bind(const std::string& name, RpcHandler h) {
-    if (name.empty())
-        throw std::runtime_error("[Rpc] empty name");
-    handlers()[name] = std::move(h);
 }
 
-bool Rpc::has(const std::string& name) { return handlers().count(name) > 0; }
+std::unordered_map<RpcId, RpcHandler>& Rpc::handlers() { return registry().handlers; }
+std::unordered_map<RpcId, std::string>& Rpc::names() { return registry().names; }
+std::unordered_map<std::uint32_t, PendingRpc>& Rpc::pending() { return pending_map(); }
 
-void Rpc::run_local_handler(const std::string& name, const std::vector<std::uint8_t>& args) {
-    auto it = handlers().find(name);
-    if (it == handlers().end()) return;
+std::uint32_t Rpc::next_request_id() { return _next_id++; }
 
-    BinaryReader rr(args.data(), args.size());
-    RpcContext ctx{};
-    ctx.sender = kServerPeerId;
-    ctx.request_id = 0;
-    try {
-        it->second(ctx, rr);
-    } catch (const std::exception& e) {
-        std::printf("[Rpc] broadcast '%s': %s\n", name.c_str(), e.what());
+void Rpc::bind_raw(std::string_view name, RpcHandler handler) {
+    if (name.empty())
+        throw std::runtime_error("[Rpc] empty name");
+
+    const RpcId id = rpc_id(name);
+
+    auto& reg = registry();
+    auto existing = reg.names.find(id);
+    if (existing != reg.names.end() && existing->second != name) {
+        std::printf("[Rpc] WARNING: id collision between '%s' and '%s' (id %u)\n",
+                    existing->second.c_str(), std::string(name).c_str(), id);
     }
+
+    reg.handlers[id] = std::move(handler);
+    reg.names[id] = std::string(name);
+}
+
+void Rpc::bind(std::string_view name, RpcHandler handler) {
+    bind_raw(name, std::move(handler));
+}
+
+bool Rpc::has(std::string_view name) {
+    return handlers().find(rpc_id(name)) != handlers().end();
+}
+
+RpcId Rpc::id(std::string_view name) {
+    return rpc_id(name);
+}
+
+std::string_view Rpc::name_of(RpcId id) {
+    auto& n = names();
+    auto it = n.find(id);
+    if (it == n.end()) return {};
+    return it->second;
+}
+
+void Rpc::unbind(std::string_view name) {
+    const RpcId id = rpc_id(name);
+    handlers().erase(id);
+    names().erase(id);
+}
+
+void Rpc::clear_handlers() {
+    handlers().clear();
+    names().clear();
 }
 
 std::uint32_t Rpc::invoke_async(
-    const std::string& name,
-    std::function<void(BinaryReader&)> on_reply,
-    std::function<void()> on_timeout,
+    std::string_view name,
+    RpcReplyCallback on_reply,
+    RpcTimeoutCallback on_timeout,
     std::vector<std::uint8_t> args,
     float timeout_sec
 ) {
-    std::uint32_t rid = next_request_id();
-    pending()[rid] = PendingRpc{
-        std::move(on_reply), std::move(on_timeout), timeout_sec
-    };
-
-    Network::send(kServerPeerId, MsgType::RpcCall, SendFlag::Reliable,
-        [rid, name_copy = name,
-         args_copy = std::move(args)](BinaryWriter& w) mutable {
-            w.write(rid);
-            w.write(name_copy);
-            if (!args_copy.empty())
-                w.write(args_copy.data(), args_copy.size());
-        });
-    return rid;
+    return invoke_async(
+        kServerPeerId, name, std::move(on_reply), std::move(on_timeout),
+        std::move(args), timeout_sec);
 }
 
 std::uint32_t Rpc::invoke_async(
     PeerId target,
-    const std::string& name,
-    std::function<void(BinaryReader&)> on_reply,
-    std::function<void()> on_timeout,
+    std::string_view name,
+    RpcReplyCallback on_reply,
+    RpcTimeoutCallback on_timeout,
     std::vector<std::uint8_t> args,
     float timeout_sec
 ) {
-    std::uint32_t rid = next_request_id();
+    const RpcId rpc = rpc_id(name);
+    const std::uint32_t rid = next_request_id();
+
     pending()[rid] = PendingRpc{
-        std::move(on_reply), std::move(on_timeout), timeout_sec
+        std::move(on_reply),
+        std::move(on_timeout),
+        timeout_sec
     };
 
     Network::send(target, MsgType::RpcCall, SendFlag::Reliable,
-        [rid, name_copy = name,
-         args_copy = std::move(args)](BinaryWriter& w) mutable {
-            w.write(rid);
-            w.write(name_copy);
-            if (!args_copy.empty())
-                w.write(args_copy.data(), args_copy.size());
+        [rid, rpc, args = std::move(args)](BinaryWriter& w) mutable {
+            write_call(w, rpc, rid);
+            if (!args.empty())
+                w.write(args.data(), args.size());
         });
+
+    Network::stats().rpcs_sent++;
     return rid;
 }
 
+void Rpc::dispatch_local(RpcId id, BinaryReader& r) {
+    auto& map = handlers();
+    auto it = map.find(id);
+    if (it == map.end()) return;
+
+    RpcContext ctx;
+    ctx.sender = kServerPeerId;
+    ctx.request_id = 0;
+    try {
+        it->second(ctx, r);
+    } catch (const std::exception& e) {
+        std::printf("[Rpc] local call failed: %s\n", e.what());
+    } catch (...) {
+        std::printf("[Rpc] local call failed with an unknown exception\n");
+    }
+}
+
 void Rpc::handle_call(PeerId sender, bool on_server, BinaryReader& r) {
-    std::uint32_t rid = 0;
-    std::string   name;
-    if (!r.read(rid)) return;
-    if (!r.read(name)) return;
+    RpcId id = 0;
+    if (!r.read(id)) return;
 
-    RpcContext ctx{};
-    ctx.sender = on_server ? sender : kServerPeerId;
-    ctx.from_server = !on_server;
-    ctx.request_id  = rid;
+    std::uint32_t request_id = 0;
+    if (!r.read(request_id)) return;
 
-    auto it = handlers().find(name);
-    if (it == handlers().end()) {
-        std::printf("[Rpc] unhandled '%s' from peer %u\n", name.c_str(), sender);
+    auto& map = handlers();
+    auto it = map.find(id);
+    if (it == map.end()) {
+        if ((++g_unknown_calls % 1024) == 1)
+            std::printf("[Rpc] unknown rpc id %u from peer %u\n", id, sender);
         return;
     }
+
+    RpcContext ctx;
+    ctx.sender = on_server ? sender : kServerPeerId;
+    ctx.from_server = !on_server;
+    ctx.request_id = request_id;
+
     it->second(ctx, r);
 
     if (!ctx.has_reply) return;
 
-    PeerId back = on_server ? sender : kServerPeerId;
+    PeerId back = ctx.reply_target != kInvalidPeerId
+        ? ctx.reply_target
+        : (on_server ? sender : kServerPeerId);
     if (back == kInvalidPeerId) return;
 
     Network::send(back, MsgType::RpcReply, SendFlag::Reliable,
-        [&ctx, rid](BinaryWriter& w) {
-            w.write(rid);
+        [&ctx, request_id](BinaryWriter& w) {
+            w.write(request_id);
             if (!ctx.reply_payload.empty())
                 w.write(ctx.reply_payload.data(), ctx.reply_payload.size());
         });
@@ -124,13 +179,14 @@ void Rpc::handle_reply(BinaryReader& r) {
     std::uint32_t rid = 0;
     if (!r.read(rid)) return;
 
-    auto it = pending().find(rid);
-    if (it == pending().end()) return;
+    auto& p = pending();
+    auto it = p.find(rid);
+    if (it == p.end()) return;
 
-    PendingRpc p = std::move(it->second);
-    pending().erase(it);
+    PendingRpc entry = std::move(it->second);
+    p.erase(it);
 
-    if (p.on_reply) p.on_reply(r);
+    if (entry.on_reply) entry.on_reply(r);
 }
 
 void Rpc::update(float dt) {

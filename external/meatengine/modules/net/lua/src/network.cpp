@@ -83,7 +83,41 @@ static void bind(sol::state& lua) {
 
     table.set_function("get_auto_cleanup_owned",
         []() { return me::net::Network::get_auto_cleanup_owned(); });
-    
+
+
+    table.set_function("set_batching",
+        [](bool v) { me::net::Network::set_batching(v); });
+
+    table.set_function("batching",
+        []() { return me::net::Network::batching(); });
+
+    table.set_function("flush",
+        []() { me::net::Network::flush(); });
+
+    table.set_function("peer_count",
+        []() { return me::net::Network::peer_count(); });
+
+
+    table.set_function("stats", [&lua]() {
+        const auto& s = me::net::Network::stats();
+        sol::table t = lua.create_table();
+        t["messages_sent"] = s.messages_sent;
+        t["messages_received"] = s.messages_received;
+        t["bytes_sent"] = s.bytes_sent;
+        t["bytes_received"] = s.bytes_received;
+        t["batches_sent"] = s.batches_sent;
+        t["rpcs_sent"] = s.rpcs_sent;
+        t["rpcs_received"] = s.rpcs_received;
+        t["dropped_sends"] = s.dropped_sends;
+        t["messages_per_sec"] = s.messages_per_sec;
+        t["rpcs_per_sec"] = s.rpcs_per_sec;
+        t["megabytes_per_sec"] = s.megabytes_per_sec;
+        return t;
+    });
+
+    table.set_function("reset_stats",
+        []() { me::net::Network::reset_stats(); });
+
 }
 
 ME_LUA_BINDING(

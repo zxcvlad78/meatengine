@@ -3,9 +3,11 @@
 #include <meatengine/ecs/SystemRegistry.hpp>
 #include <meatengine/net/Network.hpp>
 
-void run() {
+static void run() {
     if (auto* s = me::net::Network::server()) s->Update();
     else if (auto* c = me::net::Network::client()) c->Update();
+
+    me::net::Network::update_stats();
 }
 
 

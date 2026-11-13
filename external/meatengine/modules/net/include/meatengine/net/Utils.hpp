@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Types.hpp"
+
 #include <functional>
 #include <string>
 
@@ -22,6 +23,14 @@ void ShutdownNetwork();
 void SetLogCallback(LogCallback cb);
 void InternalDebugOutput(ESteamNetworkingSocketsDebugOutputType eType, const char* pszMsg);
 
+void SetLogLevel(LogLevel level);
+LogLevel GetLogLevel();
+
+void SetSendRate(std::uint32_t bytes_per_sec);
+std::uint32_t GetSendRate();
+
+void ApplyConnectionTuning(ConnectionID conn);
+
 ISteamNetworkingSockets* GetSocketsInterface();
 
-} // namespace MeatNet
+}

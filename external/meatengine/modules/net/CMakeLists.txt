@@ -3,6 +3,8 @@ add_library(meatengine_net STATIC
     src/Client.cpp
     src/Network.cpp
     src/NetworkPeer.cpp
+    src/Packet.cpp
+    src/Protocol.cpp
     src/Replication.cpp
     src/Rpc.cpp
     src/Serialization.cpp
@@ -11,6 +13,7 @@ add_library(meatengine_net STATIC
     src/setup/network.cpp
     src/hooks.cpp
     src/serialization/spatial.cpp
+    src/systems/network/flush.cpp
     src/systems/network/send.cpp
     src/systems/network/update.cpp
     src/systems/network/rpc/update.cpp

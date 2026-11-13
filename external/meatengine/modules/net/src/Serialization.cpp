@@ -1,12 +1,16 @@
 #include <meatengine/net/Serialization.hpp>
+
 #include <algorithm>
 #include <cstring>
 
 namespace me::net {
 
-BinaryWriter::BinaryWriter(size_t initial_capacity) {
-    m_buffer.reserve(initial_capacity);
+BinaryWriter::BinaryWriter(std::size_t initial_capacity) {
+    m_owned.reserve(initial_capacity);
 }
+
+BinaryWriter::BinaryWriter(std::vector<std::uint8_t>* external)
+    : m_external(external) {}
 
 void BinaryWriter::write(int8_t v) { write(&v, 1); }
 void BinaryWriter::write(uint8_t v) { write(&v, 1); }
@@ -56,48 +60,54 @@ void BinaryWriter::write(bool v) {
 }
 
 void BinaryWriter::write(const std::string& str) {
-    uint32_t len = static_cast<uint32_t>(str.size());
-    write(len);
-    if (len > 0) write(str.data(), len);
+    write(std::string_view(str));
+}
+
+void BinaryWriter::write(std::string_view str) {
+    write_varint(*this, static_cast<std::uint32_t>(str.size()));
+    if (!str.empty()) write(str.data(), str.size());
 }
 
 void BinaryWriter::write(const char* v) {
     if (!v) {
-        write(std::string{});
+        write_varint(*this, 0);
         return;
     }
     const size_t n = std::strlen(v);
-    write(static_cast<uint32_t>(n));
+    write_varint(*this, static_cast<std::uint32_t>(n));
     if (n > 0) write(v, n);
 }
 
 void BinaryWriter::write(const std::vector<uint8_t>& v) {
-    const uint32_t len = static_cast<uint32_t>(v.size());
-    write(len);
-    if (len > 0) write(v.data(), len);
+    write_varint(*this, static_cast<std::uint32_t>(v.size()));
+    if (!v.empty()) write(v.data(), v.size());
 }
 
 void BinaryWriter::write(const void* data, size_t size) {
     if (size == 0) return;
     const uint8_t* bytes = static_cast<const uint8_t*>(data);
-    m_buffer.insert(m_buffer.end(), bytes, bytes + size);
+    auto& buf = target();
+    buf.insert(buf.end(), bytes, bytes + size);
 }
 
 void BinaryWriter::patch_u8(size_t off, uint8_t v) {
-    if (off + 1 > m_buffer.size()) return;
-    m_buffer[off] = v;
+    auto& buf = target();
+    if (off + 1 > buf.size()) return;
+    buf[off] = v;
 }
 
 void BinaryWriter::patch_u16(size_t off, uint16_t v) {
-    if (off + 2 > m_buffer.size()) return;
+    auto& buf = target();
+    if (off + 2 > buf.size()) return;
     v = to_be(v);
-    std::memcpy(m_buffer.data() + off, &v, 2);
+    std::memcpy(buf.data() + off, &v, 2);
 }
 
 void BinaryWriter::patch_u32(size_t off, uint32_t v) {
-    if (off + 4 > m_buffer.size()) return;
+    auto& buf = target();
+    if (off + 4 > buf.size()) return;
     v = to_be(v);
-    std::memcpy(m_buffer.data() + off, &v, 4);
+    std::memcpy(buf.data() + off, &v, 4);
 }
 
 BinaryReader::BinaryReader(const uint8_t* data, size_t size)
@@ -176,8 +186,8 @@ bool BinaryReader::read(bool& out) {
 }
 
 bool BinaryReader::read(std::string& out) {
-    uint32_t len;
-    if (!read(len)) return false;
+    uint32_t len = 0;
+    if (!read_varint(*this, len)) return false;
     if (len == 0) {
         out.clear();
         return true;
@@ -192,8 +202,8 @@ bool BinaryReader::read(std::string& out) {
 }
 
 bool BinaryReader::read(std::vector<uint8_t>& out) {
-    uint32_t len;
-    if (!read(len)) return false;
+    uint32_t len = 0;
+    if (!read_varint(*this, len)) return false;
     if (len == 0) {
         out.clear();
         return true;
@@ -216,6 +226,24 @@ bool BinaryReader::read(void* out, size_t size) {
     }
     std::memcpy(out, m_data + m_pos, size);
     m_pos += size;
+    return true;
+}
+
+bool BinaryReader::skip(size_t n) {
+    if (n > m_size || m_pos > m_size - n) {
+        m_valid = false;
+        return false;
+    }
+    m_pos += n;
+    return true;
+}
+
+bool BinaryReader::seek(size_t pos) {
+    if (pos > m_size) {
+        m_valid = false;
+        return false;
+    }
+    m_pos = pos;
     return true;
 }
 
