@@ -1,8 +1,12 @@
 add_library(meatengine_net STATIC
-    src/net.cpp
     src/Client.cpp
     src/Network.cpp
+    src/NetworkDispatch.cpp
+    src/NetworkEntities.cpp
     src/NetworkPeer.cpp
+    src/NetworkPeers.cpp
+    src/NetworkStats.cpp
+    src/NetworkTransport.cpp
     src/Packet.cpp
     src/Protocol.cpp
     src/Replication.cpp
