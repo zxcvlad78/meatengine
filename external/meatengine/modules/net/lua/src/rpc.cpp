@@ -52,7 +52,7 @@ void write_lua_value(BinaryWriter& w, const sol::object& v) {
         case sol::type::boolean: w.write(v.as<bool>()); return;
         case sol::type::string: {
             std::string_view sv = v.as<std::string_view>();
-            w.write(static_cast<uint32_t>(sv.size()));
+            me::net::write_varint(w, static_cast<std::uint32_t>(sv.size()));
             if (!sv.empty()) w.write(sv.data(), sv.size());
             return;
         }

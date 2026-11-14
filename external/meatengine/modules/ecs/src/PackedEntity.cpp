@@ -30,6 +30,10 @@ bool PackedEntity::exists(const std::string& id) {
     return registry().count(id) > 0;
 }
 
+void PackedEntity::clear() {
+    registry().clear();
+}
+
 entt::entity PackedEntity::spawn(const std::string& id, entt::registry& reg) {
     auto it = registry().find(id);
     if (it == registry().end()) {

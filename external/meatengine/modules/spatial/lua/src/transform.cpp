@@ -8,7 +8,11 @@ static void bind(sol::state& lua) {
         sol::constructors<me::spatial::cmp::Transform()>(),
         "position", &me::spatial::cmp::Transform::position,
         "rotation", &me::spatial::cmp::Transform::rotation,
-        "scale", &me::spatial::cmp::Transform::scale
+        "scale", &me::spatial::cmp::Transform::scale,
+        "rotation_degrees", sol::property(
+            [](me::spatial::cmp::Transform& t) { return t.rotation.asDegrees(); },
+            [](me::spatial::cmp::Transform& t, float degrees) { t.rotation = sf::degrees(degrees); }
+        )
     );
     
     me::lua::register_component<me::spatial::cmp::Transform>("Transform", lua);

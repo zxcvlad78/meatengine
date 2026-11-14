@@ -44,7 +44,6 @@ void InternalDebugOutput(ESteamNetworkingSocketsDebugOutputType eType, const cha
 
     if (eType == k_ESteamNetworkingSocketsDebugOutputType_Bug) {
         fflush(stderr);
-        NukeProcess(1);
     }
 }
 

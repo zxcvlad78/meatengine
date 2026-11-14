@@ -81,6 +81,16 @@ namespace me {
                 slot.buffer.reset();
             }
         }
+
+        static void reset() {
+            if (!initialized) return;
+            for (auto& slot : pool) {
+                slot.sound.stop();
+                slot.buffer.reset();
+            }
+            pool.clear();
+            initialized = false;
+        }
     };
 
     // std::vector<SoundPlayer::Slot> SoundPlayer::pool;

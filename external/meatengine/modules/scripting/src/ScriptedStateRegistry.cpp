@@ -38,6 +38,23 @@ bool ScriptedStateRegistry::exists(const std::string& id) {
     return registry().count(id) > 0;
 }
 
+void ScriptedStateRegistry::clear() {
+    registry().clear();
+}
+
+namespace {
+
+    struct ScriptedStateShutdownHook {
+        ScriptedStateShutdownHook() {
+            MainLoop::add_on_shutdown([] {
+                ScriptedStateRegistry::clear();
+            });
+        }
+    };
+
+    ScriptedStateShutdownHook g_scripted_state_shutdown_hook;
+}
+
 void ScriptedStateRegistry::change_to(const std::string& id) {
     auto it = registry().find(id);
     if (it == registry().end()) {

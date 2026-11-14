@@ -34,6 +34,22 @@ static void bind(sol::state& lua) {
     tilemap_ut.set_function("load_tiles", &me::graphics::cmp::TileMap::load_tiles);
     tilemap_ut.set_function("set_tile", &me::graphics::cmp::TileMap::set_tile);
     tilemap_ut.set_function("get_tile", &me::graphics::cmp::TileMap::get_tile);
+
+    tilemap_ut.set_function("set_tiles",
+        [](me::graphics::cmp::TileMap& tm, unsigned int width, unsigned int height, sol::table tiles) {
+            tm.origin_x = 0;
+            tm.origin_y = 0;
+            tm.width = width;
+            tm.height = height;
+            tm.tiles.assign(static_cast<std::size_t>(width) * height, -1);
+
+            for (std::size_t i = 0; i < tm.tiles.size(); ++i) {
+                sol::object v = tiles.get<sol::object>(static_cast<int>(i + 1));
+                if (v.is<int>()) tm.tiles[i] = v.as<int>();
+            }
+
+            tm.dirty = true;
+        });
     
     me::lua::register_component<me::graphics::cmp::TileMap>("TileMap", lua);
 }

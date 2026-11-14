@@ -176,6 +176,10 @@ namespace me {
             m_window.display();
         }
 
+        if (m_current_state) m_current_state->on_exit(m_window, m_registry);
+        m_registry.clear();
+        m_current_state.reset();
+        m_next_state.reset();
         for (auto& hook : m_on_shutdown) hook();
     }
 

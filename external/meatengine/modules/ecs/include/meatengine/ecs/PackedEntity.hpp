@@ -19,6 +19,7 @@ public:
     static void register_pe(const std::string& id, SpawnFn fn);
     static entt::entity spawn(const std::string& id, entt::registry& reg);
     static bool exists(const std::string& id);
+    static void clear();
 
 private:
     static std::unordered_map<std::string, SpawnFn>& registry();

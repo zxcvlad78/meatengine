@@ -54,6 +54,12 @@ static void bind(sol::state& lua) {
             me::net::Network::set_authority(e, owner);
         });
 
+    table.set_function("is_authority",
+        [](entt::entity e) { return me::net::Network::is_authority(e); });
+
+    table.set_function("now_ms",
+        []() { return me::net::Network::now_ms(); });
+
     table.set_function("set_on_peer_connected",
         [](sol::protected_function fn) {
             me::net::Network::set_on_peer_connected(

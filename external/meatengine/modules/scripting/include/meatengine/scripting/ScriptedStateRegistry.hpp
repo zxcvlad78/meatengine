@@ -13,6 +13,7 @@ public:
     static void register_ss(const std::string& id, sol::table callbacks);
     static void change_to(const std::string& id);
     static bool exists(const std::string& id);
+    static void clear();
 
 private:
     struct Entry {
