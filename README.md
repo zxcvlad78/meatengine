@@ -77,4 +77,4 @@ add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
 ```
 vcpkg install
 ```
-6. **Configure your cmake project**
+6. **Configure build your cmake project**
