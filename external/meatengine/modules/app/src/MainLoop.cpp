@@ -1,4 +1,4 @@
-#include <meatengine/app/MainLoop.hpp>
+﻿#include <meatengine/app/MainLoop.hpp>
 
 #include <meatengine/assets/Resources.hpp>
 #include <meatengine/assets/ResourceLoader.hpp>
@@ -88,11 +88,28 @@ namespace me {
 
         in.mouse_just_pressed = false;
         in.mouse_just_released = false;
+        in.text_entered.clear();
+        in.backspace_pressed = false;
+        in.delete_pressed = false;
+        in.enter_pressed = false;
+        in.left_pressed = false;
+        in.right_pressed = false;
+        in.up_pressed = false;
+        in.down_pressed = false;
+        in.home_pressed = false;
+        in.end_pressed = false;
+        in.select_all_pressed = false;
+        in.copy_pressed = false;
+        in.paste_pressed = false;
+        in.cut_pressed = false;
+
         in.mouse_down = sf::Mouse::isButtonPressed(sf::Mouse::Button::Left);
         in.mouse_pos = m_window.mapPixelToCoords(
             sf::Mouse::getPosition(m_window),
             m_window.getDefaultView()
         );
+        in.ctrl_down = sf::Keyboard::isKeyPressed(sf::Keyboard::Key::LControl) || sf::Keyboard::isKeyPressed(sf::Keyboard::Key::RControl);
+        in.shift_down = sf::Keyboard::isKeyPressed(sf::Keyboard::Key::LShift) || sf::Keyboard::isKeyPressed(sf::Keyboard::Key::RShift);
 
         while (const std::optional event = m_window.pollEvent()) {
 
@@ -101,14 +118,16 @@ namespace me {
             }
             else if (auto* mb = event->getIf<sf::Event::MouseButtonPressed>()) {
                 if (mb->button == sf::Mouse::Button::Left)
-                in.mouse_just_pressed = true;
+                    in.mouse_just_pressed = true;
             }
             else if (auto* mb = event->getIf<sf::Event::MouseButtonReleased>()) {
                 if (mb->button == sf::Mouse::Button::Left)
-                in.mouse_just_released = true;
+                    in.mouse_just_released = true;
             }
-
-            if (const auto* keyPressed = event->getIf<sf::Event::KeyPressed>()) {
+            else if (auto* te = event->getIf<sf::Event::TextEntered>()) {
+                in.text_entered.push_back(te->unicode);
+            }
+            else if (const auto* keyPressed = event->getIf<sf::Event::KeyPressed>()) {
                 if (keyPressed->code == sf::Keyboard::Key::F11) {
                     m_fullscreen = !m_fullscreen;
                     if (m_fullscreen) {
@@ -117,6 +136,32 @@ namespace me {
                         m_window.create(m_prev_mode, m_window_title, sf::State::Windowed);
                     }
                     m_window.setFramerateLimit(m_target_fps);
+                } else if (keyPressed->code == sf::Keyboard::Key::Backspace) {
+                    in.backspace_pressed = true;
+                } else if (keyPressed->code == sf::Keyboard::Key::Delete) {
+                    in.delete_pressed = true;
+                } else if (keyPressed->code == sf::Keyboard::Key::Enter) {
+                    in.enter_pressed = true;
+                } else if (keyPressed->code == sf::Keyboard::Key::Left) {
+                    in.left_pressed = true;
+                } else if (keyPressed->code == sf::Keyboard::Key::Right) {
+                    in.right_pressed = true;
+                } else if (keyPressed->code == sf::Keyboard::Key::Up) {
+                    in.up_pressed = true;
+                } else if (keyPressed->code == sf::Keyboard::Key::Down) {
+                    in.down_pressed = true;
+                } else if (keyPressed->code == sf::Keyboard::Key::Home) {
+                    in.home_pressed = true;
+                } else if (keyPressed->code == sf::Keyboard::Key::End) {
+                    in.end_pressed = true;
+                } else if (keyPressed->control && keyPressed->code == sf::Keyboard::Key::A) {
+                    in.select_all_pressed = true;
+                } else if (keyPressed->control && keyPressed->code == sf::Keyboard::Key::C) {
+                    in.copy_pressed = true;
+                } else if (keyPressed->control && keyPressed->code == sf::Keyboard::Key::V) {
+                    in.paste_pressed = true;
+                } else if (keyPressed->control && keyPressed->code == sf::Keyboard::Key::X) {
+                    in.cut_pressed = true;
                 }
             }
 
@@ -183,3 +228,4 @@ namespace me {
     }
 
 } // namespace me
+

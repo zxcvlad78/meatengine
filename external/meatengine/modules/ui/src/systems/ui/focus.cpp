@@ -1,4 +1,4 @@
-#include <meatengine/ecs/SystemRegistry.hpp>
+﻿#include <meatengine/ecs/SystemRegistry.hpp>
 #include <meatengine/app/MainLoop.hpp>
 #include <meatengine/app/ctx/InputState.hpp>
 

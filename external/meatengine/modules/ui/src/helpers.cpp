@@ -1,4 +1,5 @@
-#include <meatengine/ui/helpers.hpp>
+﻿#include <meatengine/ui/helpers.hpp>
+#include <meatengine/ui/cmp/TextEditState.hpp>
 
 
 namespace me::ui {
@@ -36,12 +37,24 @@ void set_label_text(entt::registry& r, entt::entity e, const std::string& text) 
 
 
 void set_text(entt::registry& r, entt::entity e, const std::string& text) {
+    if (auto* st = r.try_get<me::ui::cmp::TextEditState>(e)) {
+        st->set_value_utf8(text);
+        st->cursor = st->value.size();
+        st->anchor = st->cursor;
+        return;
+    }
     auto* c = r.try_get<me::hierarchy::cmp::Children>(e);
     if (!c) return;
 
-    for (auto c : c->entities) {
-        if (auto* lb = r.try_get<me::ui::cmp::Label>(c); lb && lb->text) {
+    for (auto child : c->entities) {
+        if (auto* lb = r.try_get<me::ui::cmp::Label>(child); lb && lb->text) {
             lb->set_string(text);
+            return;
+        }
+        if (auto* st = r.try_get<me::ui::cmp::TextEditState>(child)) {
+            st->set_value_utf8(text);
+            st->cursor = st->value.size();
+            st->anchor = st->cursor;
             return;
         }
     }

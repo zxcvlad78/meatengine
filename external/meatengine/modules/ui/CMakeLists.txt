@@ -1,4 +1,4 @@
-find_package(SFML 3.0 CONFIG REQUIRED COMPONENTS Graphics)
+﻿find_package(SFML 3.0 CONFIG REQUIRED COMPONENTS Graphics)
 
 add_library(meatengine_ui STATIC
     src/ui.cpp
@@ -12,6 +12,7 @@ add_library(meatengine_ui STATIC
     src/systems/ui/render.cpp
     src/systems/ui/stack.cpp
     src/systems/ui/style.cpp
+    src/systems/ui/text_input.cpp
 )
 
 target_include_directories(meatengine_ui PUBLIC
@@ -42,3 +43,4 @@ meatengine_require(spatial)
 if(MEATENGINE_WITH_SCRIPTING)
     add_subdirectory(lua)
 endif()
+
