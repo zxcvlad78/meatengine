@@ -12,7 +12,7 @@ namespace me {
     class App {
     private:
         std::string name_;
-        std::vector<app::Plugin> plugins_;
+        std::vector<std::unique_ptr<app::Plugin>> plugins_;
     public:
         App(const std::string& name)
         : name_(name) {

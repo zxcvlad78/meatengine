@@ -5,5 +5,7 @@ add_library(meatengine_plugin_text_editor STATIC
 target_include_directories(meatengine_plugin_text_editor PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 )
+meatengine_require(app)
+meatengine_require(ecs)
 
 meatengine_set_target_options(meatengine_plugin_text_editor)

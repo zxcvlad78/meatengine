@@ -1,6 +1,7 @@
 #pragma once
 #include <meatengine/app/Plugin.hpp>
 #include <meatengine/app/App.hpp>
+#include <meatengine/ecs/SystemRegistry.hpp>
 #include <entt/entt.hpp>
 
 namespace me {
@@ -9,9 +10,7 @@ public:
     const char* name() const override { return "TimePlugin"; }
 
     void build(App& app) override {
-        app.add_system([](entt::registry& reg) {
-            
-        });
+        SystemRegistry.
     }
 };
 }
