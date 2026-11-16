@@ -105,7 +105,11 @@ set(MEATENGINE_ALL_TARGETS "")
 foreach(module IN LISTS MEATENGINE_MODULES)
     list(APPEND MEATENGINE_ALL_TARGETS meatengine_${module})
 endforeach()
+foreach(module IN LISTS MEATENGINE_PLUGINS)
+    list(APPEND MEATENGINE_ALL_TARGETS meatengine_plugin_${module})
+endforeach()
 list(APPEND MEATENGINE_ALL_TARGETS ${MEATENGINE_LUA_TARGETS})
+
 
 add_library(meatengine INTERFACE)
 add_library(meatengine::meatengine ALIAS meatengine)

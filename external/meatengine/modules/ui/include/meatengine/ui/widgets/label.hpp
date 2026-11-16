@@ -1,6 +1,7 @@
 #pragma once
 #include <entt/entt.hpp>
 #include <string>
+#include <meatengine/hierarchy/hierarchy.hpp>
 #include <meatengine/ui/widgets/base_node.hpp>
 #include <meatengine/ui/cmp/Label.hpp>
 

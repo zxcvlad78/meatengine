@@ -134,7 +134,6 @@ namespace me {
         while (m_window.isOpen()) {
             if (m_next_state) {
                 if (m_current_state) m_current_state->on_exit(m_window, m_registry);
-                m_registry.clear();
                 m_current_state = std::move(m_next_state);
                 m_current_state->on_enter(m_window, m_registry);
             }

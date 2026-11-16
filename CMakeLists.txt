@@ -34,6 +34,12 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     "meatengine::meatengine"
 )
 
+if(TARGET meatengine_plugin_text_editor)
+    target_link_libraries(${PROJECT_NAME} PRIVATE
+        "$<LINK_LIBRARY:WHOLE_ARCHIVE,meatengine_plugin_text_editor>"
+    )
+endif()
+
 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:${PROJECT_NAME}>"
     COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_SOURCE_DIR}/data" "$<TARGET_FILE_DIR:${PROJECT_NAME}>/data"

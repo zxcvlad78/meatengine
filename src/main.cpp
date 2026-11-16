@@ -7,11 +7,11 @@
 #include <godlike/states/MainMenu.hpp>
 #include <godlike/states/ModList.hpp>
 #include <godlike/packed_entities.hpp>
-
+#include <meatengine/plugins/TextEditor.hpp>
 
 int main() {
-	godlike::packed_entities::init();
-	auto app = me::App("GodLike")
+	me::App("GodLike")
+		.add_plugins<me::TextEditorPlugin>()
 		.run();
 	me::MainLoop::run(std::make_unique<godlike::states::MainMenu>());
 	me::SoundPlayer::reset();

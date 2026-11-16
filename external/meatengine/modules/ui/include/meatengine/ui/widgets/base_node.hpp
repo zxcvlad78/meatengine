@@ -1,5 +1,6 @@
 #pragma once
 #include <entt/entt.hpp>
+#include <meatengine/spatial/cmp/Transform.hpp>
 #include <meatengine/hierarchy/cmp/Children.hpp>
 #include <meatengine/ui/cmp/Node.hpp>
 #include <meatengine/ui/cmp/FlexStyle.hpp>
