@@ -1,9 +1,10 @@
-#include <meatengine/ecs/SystemRegistry.hpp>
+﻿#include <meatengine/ecs/SystemRegistry.hpp>
 #include <meatengine/app/MainLoop.hpp>
 #include <meatengine/app/ctx/InputState.hpp>
 
 #include <meatengine/hierarchy/cmp/Parent.hpp>
 #include <meatengine/spatial/cmp/GlobalBounds.hpp>
+#include <meatengine/graphics/cmp/Visibility.hpp>
 
 #include <meatengine/ui/cmp/ComputedNode.hpp>
 #include <meatengine/ui/cmp/Interaction.hpp>
@@ -18,6 +19,21 @@ namespace {
 
 using namespace me;
 
+static bool is_visible(entt::registry& r, entt::entity e) {
+    entt::entity cur = e;
+    while (cur != entt::null && r.valid(cur)) {
+        if (auto* vis = r.try_get<me::graphics::cmp::Visibility>(cur)) {
+            if (!vis->value) return false;
+        }
+        if (auto* p = r.try_get<me::hierarchy::cmp::Parent>(cur)) {
+            if (p->entity == entt::null) break;
+            cur = p->entity;
+        } else {
+            break;
+        }
+    }
+    return true;
+}
 
 void sync_state_tags(
     entt::registry& r,
@@ -53,6 +69,7 @@ entt::entity pick_topmost(entt::registry& r, sf::Vector2f world_pos) {
 
     for (auto [e, gb] : r.view<me::spatial::cmp::GlobalBounds>().each()) {
         if (!gb.rect.contains(world_pos)) continue;
+        if (!is_visible(r, e)) continue;
 
         auto* cn = r.try_get<me::ui::cmp::ComputedNode>(e);
         uint32_t stack = cn ? cn->stack_index : 0u;
@@ -90,6 +107,15 @@ void run() {
 
     static entt::entity prev_hover = entt::null;
 
+    // if previously hovered entity became invisible, clear it
+    if (prev_hover != entt::null && r.valid(prev_hover) && !is_visible(r, prev_hover)) {
+        Event ev{EventType::Unhover, in.mouse_pos, prev_hover, false};
+        bubble_event(r, prev_hover, ev);
+        if (auto* i = r.try_get<Interaction>(prev_hover)) *i = Interaction::None;
+        sync_state_tags(r, prev_hover, Interaction::None);
+        prev_hover = entt::null;
+    }
+
     if (target != prev_hover) {
         if (prev_hover != entt::null && r.valid(prev_hover)) {
             Event ev{EventType::Unhover, in.mouse_pos, prev_hover, false};
@@ -126,6 +152,9 @@ void run() {
     }
 
     if (in.mouse_just_released) {
+        if (press_target != entt::null && r.valid(press_target) && !is_visible(r, press_target)) {
+            press_target = entt::null;
+        }
         if (press_target != entt::null && press_target == target) {
             Event ev{EventType::Click, in.mouse_pos, target, false};
             bubble_event(r, target, ev);

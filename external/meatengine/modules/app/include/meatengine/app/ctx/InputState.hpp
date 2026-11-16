@@ -13,8 +13,7 @@ namespace me::app::ctx {
         bool mouse_just_pressed = false;
         bool mouse_just_released = false;
 
-        // Text editing (cleared each frame in MainLoop::process_events)
-        std::u32string text_entered;          // unicode code points from TextEntered
+        std::u32string text_entered;
         bool backspace_pressed = false;
         bool delete_pressed = false;
         bool enter_pressed = false;

@@ -16,6 +16,8 @@ void run() {
     auto& r = me::MainLoop::get_registry();
 
     for (auto [e, fr] : r.view<me::ui::cmp::FillRect>().each()) {
+        if (!fr.styled) continue;
+
         sf::Color bg = sf::Color::White;
         sf::Color bd = sf::Color::Black;
 

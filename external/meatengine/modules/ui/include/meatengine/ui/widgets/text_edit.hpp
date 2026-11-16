@@ -24,7 +24,7 @@ inline entt::entity make_text_edit(entt::registry& reg) {
     flex_style.direction = me::ui::cmp::FlexDirection::Column;
     flex_style.align_items = me::ui::cmp::AlignItems::FlexStart;
 
-    reg.emplace<me::ui::cmp::FillRect>(e);
+    reg.emplace<me::ui::cmp::FillRect>(e).styled = false;
     reg.emplace<me::ui::cmp::BackgroundColor>(e).color = sf::Color::White;
     reg.emplace<me::ui::cmp::Focusable>(e);
     reg.emplace<me::ui::cmp::Interaction>(e);
@@ -51,3 +51,4 @@ inline entt::entity make_text_edit(entt::registry& reg, entt::entity parent, con
     return e;
 }
 }
+
