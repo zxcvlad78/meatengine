@@ -4,7 +4,8 @@
 ### Features
 - **Lua scripting**
 - **Flexible modding**
-- **Networking (in dev)**
+- **ECS**
+- **Low/high level networking (in dev)**
 
 ### Linking with your project
 1. **Create a vcpkg.json file in the root directory of your project with the following content:**
@@ -40,7 +41,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
 ```cmake
 cmake_minimum_required(VERSION 3.24)
 
-set(PROJECT_NAME godlike) # your project name
+set(PROJECT_NAME <project-name>) # your project name
 project(${PROJECT_NAME} VERSION 0.0.1 LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 20)
@@ -77,4 +78,4 @@ add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
 ```
 vcpkg install
 ```
-6. **Configure build your cmake project**
+6. **Configure and build your cmake project**
