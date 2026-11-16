@@ -14,7 +14,7 @@ static void bind(sol::state& lua) {
 }
 
 ME_LUA_BINDING(
-    "engine:cmp:ui:FillRect",
+    "engine:ui:cmp:FillRect",
     static_cast<unsigned>(me::lua::BindPriority::Component),
     &bind
 )

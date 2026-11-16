@@ -15,7 +15,7 @@ static void bind(sol::state& lua) {
 }
 
 ME_LUA_BINDING(
-    "engine:api:ModLoader",
+    "engine:modding:ModLoader",
     static_cast<unsigned>(me::lua::BindPriority::API),
     &bind
 )

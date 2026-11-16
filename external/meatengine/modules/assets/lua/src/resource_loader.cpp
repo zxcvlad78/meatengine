@@ -10,7 +10,7 @@ static void bind(sol::state& lua) {
 }
 
 ME_LUA_BINDING(
-    "engine:api:ResourceLoader",
+    "engine:assets:ResourceLoader",
     static_cast<unsigned>(me::lua::BindPriority::API),
     &bind
 )

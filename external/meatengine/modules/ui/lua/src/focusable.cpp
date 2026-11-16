@@ -10,7 +10,7 @@ static void bind(sol::state& lua) {
 }
 
 ME_LUA_BINDING(
-    "engine:ui:Focusable",
+    "engine:ui:cmp:Focusable",
     static_cast<unsigned>(me::lua::BindPriority::Component),
     &bind
 )

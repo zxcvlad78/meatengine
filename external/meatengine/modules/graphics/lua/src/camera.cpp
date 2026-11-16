@@ -38,7 +38,7 @@ static void bind(sol::state& lua) {
 }
 
 ME_LUA_BINDING(
-    "engine:cmp:Camera",
+    "engine:graphics:cmp:Camera",
     static_cast<unsigned>(me::lua::BindPriority::Component),
     &bind
 )

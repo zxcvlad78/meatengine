@@ -17,7 +17,7 @@ static void bind(sol::state& lua) {
 }
 
 ME_LUA_BINDING(
-    "engine:ui:FocusPolicy",
+    "engine:ui:cmp:FocusPolicy",
     static_cast<unsigned>(me::lua::BindPriority::Component),
     &bind
 )

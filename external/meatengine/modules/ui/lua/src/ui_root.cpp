@@ -7,7 +7,7 @@ static void bind(sol::state& lua) {
 }
 
 ME_LUA_BINDING(
-    "engine:ui:UIRoot",
+    "engine:ui:cmp:UIRoot",
     static_cast<unsigned>(me::lua::BindPriority::Component),
     &bind
 )

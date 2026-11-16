@@ -17,7 +17,7 @@ static void bind(sol::state& lua) {
 }
 
 ME_LUA_BINDING(
-    "engine:ui:UiRect",
+    "engine:ui:cmp:UiRect",
     static_cast<unsigned>(me::lua::BindPriority::BaseType),
     &bind
 )

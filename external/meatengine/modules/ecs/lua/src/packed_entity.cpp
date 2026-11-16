@@ -44,7 +44,7 @@ static void bind(sol::state& lua) {
 }
 
 ME_LUA_BINDING(
-    "engine:api:PackedEntity",
+    "engine:ecs:PackedEntity",
     static_cast<unsigned>(me::lua::BindPriority::API),
     &bind
 )

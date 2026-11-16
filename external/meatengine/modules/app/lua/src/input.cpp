@@ -118,7 +118,7 @@ static void bind(sol::state& lua) {
 }
 
 ME_LUA_BINDING(
-    "engine:api:Input",
+    "engine:app:Input",
     static_cast<unsigned>(me::lua::BindPriority::API),
     &bind
 )

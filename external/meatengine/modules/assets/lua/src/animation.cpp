@@ -25,7 +25,7 @@ static void bind(sol::state& lua) {
 }
 
 ME_LUA_BINDING(
-    "engine:Animation",
+    "engine:assets:Animation",
     static_cast<unsigned>(me::lua::BindPriority::Resource) - 1,
     &bind
 )

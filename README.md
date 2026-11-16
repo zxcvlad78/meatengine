@@ -1,10 +1,11 @@
 # meatengine
-## A simple c++ library (or game engine idk) for game development
+## A simple c++ 2d game engine 
 
 ### Features
 - **Lua scripting**
 - **Flexible modding**
-- **Networking (in dev)**
+- **Low-level networking (in dev)**
+- **High-level networking (in dev)**
 
 ### Linking with your project
 1. **Create a vcpkg.json file in the root directory of your project with the following content:**

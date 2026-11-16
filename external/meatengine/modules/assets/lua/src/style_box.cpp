@@ -46,7 +46,7 @@ static void bind(sol::state& lua) {
 }
 
 ME_LUA_BINDING(
-    "engine:StyleBox",
+    "engine:assets:StyleBox",
     static_cast<unsigned>(me::lua::BindPriority::Resource),
     &bind
 )

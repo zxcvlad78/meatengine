@@ -26,7 +26,7 @@ static void bind(sol::state& lua) {
 }
 
 ME_LUA_BINDING(
-    "engine:Texture",
+    "engine:assets:Texture",
     static_cast<unsigned>(me::lua::BindPriority::Resource),
     &bind
 )

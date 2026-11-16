@@ -74,7 +74,7 @@ static void bind(sol::state& lua) {
 }
 
 ME_LUA_BINDING(
-    "engine:base_type:Serialization",
+    "engine:net:Serialization",
     static_cast<unsigned>(me::lua::BindPriority::BaseType),
     &bind
 )

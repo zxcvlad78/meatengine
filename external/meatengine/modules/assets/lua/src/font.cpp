@@ -13,7 +13,7 @@ static void bind(sol::state& lua) {
 }
 
 ME_LUA_BINDING(
-    "engine:Font",
+    "engine:assets:Font",
     static_cast<unsigned>(me::lua::BindPriority::Resource),
     &bind
 )

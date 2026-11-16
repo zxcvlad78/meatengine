@@ -31,7 +31,7 @@ static void bind(sol::state& lua) {
 
 
 ME_LUA_BINDING(
-    "engine:sf:RectangleShape",
+    "sf:RectangleShape",
     static_cast<unsigned>(me::lua::BindPriority::BaseType),
     &bind
 )

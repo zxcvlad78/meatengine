@@ -12,7 +12,7 @@ static void bind(sol::state& lua) {
 }
 
 ME_LUA_BINDING(
-    "engine:ui:Interaction",
+    "engine:ui:cmp:Interaction",
     static_cast<unsigned>(me::lua::BindPriority::Component),
     &bind
 )

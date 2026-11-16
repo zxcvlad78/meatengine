@@ -33,7 +33,7 @@ static void bind(sol::state& lua) {
 }
 
 ME_LUA_BINDING(
-    "engine:ui:Node",
+    "engine:ui:cmp:Node",
     static_cast<unsigned>(me::lua::BindPriority::Component) + 10,
     &bind
 )

@@ -8,7 +8,7 @@ static void bind(sol::state& lua) {
 }
 
 ME_LUA_BINDING(
-    "engine:cmp:GlobalBounds",
+    "engine:spatial:cmp:GlobalBounds",
     static_cast<unsigned>(me::lua::BindPriority::Component),
     &bind
 )

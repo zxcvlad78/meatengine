@@ -69,7 +69,7 @@ static void bind(sol::state& lua) {
 }
 
 ME_LUA_BINDING(
-    "engine:cmp:ui:Label",
+    "engine:ui:cmp:Label",
     static_cast<unsigned>(me::lua::BindPriority::Component),
     &bind
 )

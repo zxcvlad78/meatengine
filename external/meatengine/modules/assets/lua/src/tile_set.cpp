@@ -18,7 +18,7 @@ static void bind(sol::state& lua) {
 }
 
 ME_LUA_BINDING(
-    "engine:TileSet",
+    "engine:assets:TileSet",
     static_cast<unsigned>(me::lua::BindPriority::Resource),
     &bind
 )

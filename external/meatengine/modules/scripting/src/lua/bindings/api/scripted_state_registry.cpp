@@ -24,7 +24,7 @@ static void bind(sol::state& lua) {
 }
 
 ME_LUA_BINDING(
-    "engine:api:ScriptedStateRegistry",
+    "engine:scripting:api:ScriptedStateRegistry",
     static_cast<unsigned>(me::lua::BindPriority::API),
     &bind
 )

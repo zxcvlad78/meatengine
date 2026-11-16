@@ -27,7 +27,7 @@ static void bind(sol::state& lua) {
 }
 
 ME_LUA_BINDING(
-    "engine:Shader",
+    "engine:assets:Shader",
     static_cast<unsigned>(me::lua::BindPriority::Resource),
     &bind
 )

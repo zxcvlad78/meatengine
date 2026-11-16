@@ -14,7 +14,7 @@ static void bind(sol::state& lua) {
 }
 
 ME_LUA_BINDING(
-    "engine:ui:BorderRaduis",
+    "engine:ui:cmp:BorderRaduis",
     static_cast<unsigned>(me::lua::BindPriority::Component),
     &bind
 )

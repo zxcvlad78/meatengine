@@ -224,7 +224,7 @@ static void bind(sol::state& lua) {
 }
 
 ME_LUA_BINDING(
-    "engine:api:Rpc",
+    "engine:net:Rpc",
     static_cast<unsigned>(me::lua::BindPriority::API),
     &bind
 )

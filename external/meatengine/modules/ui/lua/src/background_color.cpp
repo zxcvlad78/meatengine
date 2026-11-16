@@ -11,7 +11,7 @@ static void bind(sol::state& lua) {
 }
 
 ME_LUA_BINDING(
-    "engine:ui:BackgroundColor",
+    "engine:ui:cmp:BackgroundColor",
     static_cast<unsigned>(me::lua::BindPriority::Component),
     &bind
 )

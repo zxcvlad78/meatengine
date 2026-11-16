@@ -19,7 +19,7 @@ static void bind(sol::state& lua) {
 }
 
 ME_LUA_BINDING(
-    "engine:cmp:Transform",
+    "engine:spatial:cmp:Transform",
     static_cast<unsigned>(me::lua::BindPriority::Component),
     &bind
 )

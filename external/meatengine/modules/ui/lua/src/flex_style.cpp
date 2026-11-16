@@ -70,7 +70,7 @@ static void bind(sol::state& lua) {
 }
 
 ME_LUA_BINDING(
-    "engine:ui:FlexStyle",
+    "engine:ui:cmp:FlexStyle",
     static_cast<unsigned>(me::lua::BindPriority::Component),
     &bind
 )

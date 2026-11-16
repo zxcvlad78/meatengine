@@ -11,7 +11,7 @@ static void bind(sol::state& lua) {
 }
 
 ME_LUA_BINDING(
-    "engine:cmp:GlobalZIndex",
+    "engine:abstract:cmp:GlobalZIndex",
     static_cast<unsigned>(me::lua::BindPriority::Component),
     &bind
 )

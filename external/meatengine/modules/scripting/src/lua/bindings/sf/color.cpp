@@ -19,7 +19,7 @@ static void bind(sol::state& lua) {
 
 
 ME_LUA_BINDING(
-    "engine:sf:Color",
+    "sf:Color",
     static_cast<unsigned>(me::lua::BindPriority::BaseType),
     &bind
 )

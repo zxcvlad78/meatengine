@@ -18,7 +18,7 @@ static void bind(sol::state& lua) {
 }
 
 ME_LUA_BINDING(
-    "engine:SoundBuffer",
+    "engine:assets:SoundBuffer",
     static_cast<unsigned>(me::lua::BindPriority::Resource),
     &bind
 )

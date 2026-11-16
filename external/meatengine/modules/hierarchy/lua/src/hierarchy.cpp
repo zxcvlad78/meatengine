@@ -14,7 +14,7 @@ static void bind(sol::state& lua) {
 }
 
 ME_LUA_BINDING(
-    "engine:api:Hierarchy",
+    "engine:hierarchy:api:Hierarchy",
     static_cast<unsigned>(me::lua::BindPriority::API),
     &bind
 )

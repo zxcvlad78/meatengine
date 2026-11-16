@@ -10,7 +10,7 @@ static void bind(sol::state& lua) {
 }
 
 ME_LUA_BINDING(
-    "engine:cmp:Children",
+    "engine:hierarchy:cmp:Children",
     static_cast<unsigned>(me::lua::BindPriority::Component),
     &bind
 )

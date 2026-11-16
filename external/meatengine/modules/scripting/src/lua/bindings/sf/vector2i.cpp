@@ -12,7 +12,7 @@ static void bind(sol::state& lua) {
 }
 
 ME_LUA_BINDING(
-    "engine:sf:Vector2i",
+    "sf:Vector2i",
     static_cast<unsigned>(me::lua::BindPriority::BaseType),
     &bind
 )

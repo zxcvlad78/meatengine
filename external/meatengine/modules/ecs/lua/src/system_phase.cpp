@@ -18,7 +18,7 @@ static void bind(sol::state& lua) {
 }
 
 ME_LUA_BINDING(
-    "engine:SystemPhase",
+    "engine:ecs:SystemPhase",
     static_cast<unsigned>(me::lua::BindPriority::BaseType),
     &bind
 )
