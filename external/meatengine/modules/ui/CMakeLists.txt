@@ -24,6 +24,7 @@ target_link_libraries(meatengine_ui PUBLIC
     meatengine_abstract
     meatengine_assets
     meatengine_app
+    meatengine_graphics
     meatengine_ecs
     meatengine_hierarchy
     meatengine_spatial
@@ -32,6 +33,7 @@ target_link_libraries(meatengine_ui PUBLIC
 
 meatengine_require(abstract)
 meatengine_require(app)
+meatengine_require(graphics)
 meatengine_require(assets)
 meatengine_require(ecs)
 meatengine_require(hierarchy)

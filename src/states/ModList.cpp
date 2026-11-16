@@ -58,6 +58,7 @@ namespace godlike::states {
 
 void ModList::on_enter(sf::RenderWindow&, entt::registry& r) {
     auto root = r.create();
+    _ui_root = root;
     r.emplace<Transform>(root);
     r.emplace<Children>(root);
     r.emplace<UIRoot>(root);
@@ -178,7 +179,10 @@ void ModList::on_enter(sf::RenderWindow&, entt::registry& r) {
 }
 
 void ModList::handle_event(sf::RenderWindow&, entt::registry&, const sf::Event&) {}
-void ModList::on_exit(sf::RenderWindow&, entt::registry&) {}
+void ModList::on_exit(sf::RenderWindow&, entt::registry& r) {
+    hierarchy::destroy(r, _ui_root);
+    _ui_root = entt::null;
+}
 
 }
 

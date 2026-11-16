@@ -5,6 +5,8 @@
 #include <meatengine/spatial/cmp/GlobalTransform.hpp>
 #include <meatengine/ui/cmp/FillRect.hpp>
 #include <meatengine/ui/cmp/Label.hpp>
+#include <meatengine/hierarchy/cmp/Parent.hpp>
+#include <meatengine/graphics/cmp/Visibility.hpp>
 
 #include <algorithm>
 #include <vector>
@@ -12,6 +14,24 @@
 namespace {
 
 using namespace me;
+
+static bool is_visible(entt::registry& r, entt::entity e) {
+    entt::entity cur = e;
+    while (cur != entt::null) {
+        if (auto* vis = r.try_get<me::graphics::cmp::Visibility>(cur)) {
+            if (!vis->value) return false;
+        }
+
+        if (auto* p = r.try_get<me::hierarchy::cmp::Parent>(cur)) {
+            if (p->entity == entt::null) break;
+            cur = p->entity;
+        } else {
+            break;
+        }
+    }
+
+    return true;
+}
 
 void run() {
     auto& r = me::MainLoop::get_registry();
@@ -27,6 +47,8 @@ void run() {
     });
 
     for (auto e : order) {
+        if (!is_visible(r, e)) continue;
+
         sf::Transform xf = r.try_get<me::spatial::cmp::GlobalTransform>(e)
                         ? r.get<me::spatial::cmp::GlobalTransform>(e).transform
                         : sf::Transform{};

@@ -31,4 +31,14 @@ inline void set_parent(entt::registry& r, entt::entity child, entt::entity paren
 inline void clear_parent(entt::registry& r, entt::entity child) {
     set_parent(r, child, entt::null);
 }
+
+inline void destroy(entt::registry& r, entt::entity e) {
+    if (e == entt::null || !r.valid(e)) return;
+
+    if (auto* ch = r.try_get<me::hierarchy::cmp::Children>(e)) {
+        for (auto child : ch->entities) destroy(r, child);
+    }
+
+    r.destroy(e);
+}
 }
