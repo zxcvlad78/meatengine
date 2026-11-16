@@ -24,7 +24,7 @@ namespace me {
 }
 
 ME_REGISTER_SYSTEM(
-    "engine:timer:update",
+    "engine:app:timer:update",
     me::SystemPhase::Update,
     std::numeric_limits<int>::min() + 2,
     me::update

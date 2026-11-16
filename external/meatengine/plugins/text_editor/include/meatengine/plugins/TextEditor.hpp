@@ -1,0 +1,17 @@
+#pragma once
+#include <meatengine/app/Plugin.hpp>
+#include <meatengine/app/App.hpp>
+#include <entt/entt.hpp>
+
+namespace me {
+class TextEditorPlugin : public app::Plugin {
+public:
+    const char* name() const override { return "TimePlugin"; }
+
+    void build(App& app) override {
+        app.add_system([](entt::registry& reg) {
+            
+        });
+    }
+};
+}

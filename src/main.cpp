@@ -11,7 +11,8 @@
 
 int main() {
 	godlike::packed_entities::init();
-	auto app = me::App("GodLike").run();
+	auto app = me::App("GodLike")
+		.run();
 	me::MainLoop::run(std::make_unique<godlike::states::MainMenu>());
 	me::SoundPlayer::reset();
 

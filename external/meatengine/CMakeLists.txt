@@ -29,6 +29,10 @@ set(MEATENGINE_MODULES
     debug
 )
 
+set(MEATENGINE_PLUGINS
+    text_editor
+)
+
 set(MEATENGINE_MODULE_REQUIRES "")
 foreach(module IN LISTS MEATENGINE_MODULES)
     set(module_cmake "${CMAKE_CURRENT_SOURCE_DIR}/modules/${module}/CMakeLists.txt")
@@ -89,6 +93,10 @@ endif()
 
 foreach(module IN LISTS MEATENGINE_MODULES)
     add_subdirectory(modules/${module})
+endforeach()
+
+foreach(plugin IN LISTS MEATENGINE_PLUGINS)
+    add_subdirectory(plugins/${plugin})
 endforeach()
 
 get_property(MEATENGINE_LUA_TARGETS GLOBAL PROPERTY MEATENGINE_LUA_TARGETS)
