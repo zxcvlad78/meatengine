@@ -43,9 +43,7 @@ namespace me::ui::cmp {
         void set_font(me::Font& font) {
             auto h = me::ResourceLoader::find_handle(&font);
             if (!h) {
-                throw std::runtime_error(
-                    "Label::set_font: Font not from ResourceLoader"
-                );
+                throw std::runtime_error("Label::set_font: Font not from ResourceLoader");
             }
             set_font(entt::resource<me::Font>{h});
         }
@@ -54,6 +52,11 @@ namespace me::ui::cmp {
 
         sf::Text* text_ptr() noexcept { return text ? &*text : nullptr; }
         const sf::Text* text_ptr() const noexcept { return text ? &*text : nullptr; }
+
+        std::string get_string() {
+            if (!text) return "";
+            return text->getString();
+        }
 
         void set_string(const std::string& s) {
             if (!text) return;

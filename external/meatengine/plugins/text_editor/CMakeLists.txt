@@ -8,6 +8,7 @@ target_include_directories(meatengine_plugin_text_editor PUBLIC
 meatengine_require(app)
 meatengine_require(ecs)
 meatengine_require(ui)
+meatengine_require(assets)
 
 
 meatengine_set_target_options(meatengine_plugin_text_editor)

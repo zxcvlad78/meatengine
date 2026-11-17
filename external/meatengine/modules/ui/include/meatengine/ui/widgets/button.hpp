@@ -1,38 +1,57 @@
 #pragma once
 #include <entt/entt.hpp>
 #include <string>
+#include <meatengine/hierarchy/hierarchy.hpp>
+#include <meatengine/ui/helpers.hpp>
 #include <meatengine/ui/widgets/base_node.hpp>
 #include <meatengine/ui/widgets/label.hpp>
 #include <meatengine/ui/cmp/Node.hpp>
 #include <meatengine/ui/cmp/UiRect.hpp>
 #include <meatengine/ui/cmp/FlexStyle.hpp>
 #include <meatengine/ui/cmp/FillRect.hpp>
+#include <meatengine/ui/cmp/FocusPolicy.hpp>
 #include <meatengine/ui/cmp/BackgroundColor.hpp>
+#include <meatengine/ui/cmp/Interaction.hpp>
 
 namespace me::ui::widgets {
 inline entt::entity make_button(entt::registry& reg) {
     auto e = make_base_node(reg);
     
-    auto& node = reg.get<me::ui::cmp::Node>(e);
+    auto& node = reg.get_or_emplace<me::ui::cmp::Node>(e);
     node.width = me::ui::cmp::Val::Px(250.f);
     node.height = me::ui::cmp::Val::Px(50.f);
     node.padding = me::ui::cmp::UiRect::all(me::ui::cmp::Val::Px(4));
 
-    auto& flex_style = reg.get<me::ui::cmp::FlexStyle>(e);
+    auto& flex_style = reg.get_or_emplace<me::ui::cmp::FlexStyle>(e);
     flex_style.direction = me::ui::cmp::FlexDirection::Row;
     flex_style.justify = me::ui::cmp::JustifyContent::Center;
     flex_style.align_items = me::ui::cmp::AlignItems::Center;
 
-    auto& fill_rect = reg.get<me::ui::cmp::FillRect>(e);
+    auto& fill_rect = reg.get_or_emplace<me::ui::cmp::FillRect>(e);
     fill_rect.styled = true;
 
-    auto& background_color = reg.get<me::ui::cmp::BackgroundColor>(e);
+    auto& background_color = reg.get_or_emplace<me::ui::cmp::BackgroundColor>(e);
     background_color.color = {120, 120, 120};
+
+    reg.emplace_or_replace<me::ui::cmp::Interaction>(e);
+    reg.emplace_or_replace<me::ui::cmp::FocusPolicy>(e);
 
     return e;
 }
+inline entt::entity make_button(entt::registry& reg, entt::entity parent) {
+    auto e = make_button(reg);
+    me::hierarchy::set_parent(reg, e, parent);
+    return e;
+}
+
 inline entt::entity make_button(entt::registry& reg, const std::string& text) {
     auto e = make_button(reg);
+    make_label(reg, e, text);
+    return e;
+}
+
+inline entt::entity make_button(entt::registry& reg, entt::entity parent, const std::string& text) {
+    auto e = make_button(reg, parent);
     make_label(reg, e, text);
     return e;
 }

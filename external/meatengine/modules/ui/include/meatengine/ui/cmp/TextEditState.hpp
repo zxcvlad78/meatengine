@@ -21,6 +21,7 @@ namespace me::ui::cmp {
         std::u32string placeholder;
         std::size_t cursor = 0;
         std::size_t anchor = 0; // selection anchor; if != cursor => selection
+        std::size_t preferred_column = 0;
         bool multiline = false;
         bool read_only = false;
         bool password = false;
