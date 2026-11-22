@@ -27,7 +27,6 @@ namespace me::ui::cmp {
         bool password = false;
         char32_t password_char = U'*';
 
-        // visuals
         entt::resource<me::Font> font{};
         std::optional<sf::Text> text;
         sf::RectangleShape cursor_shape;
@@ -42,7 +41,6 @@ namespace me::ui::cmp {
         bool cursor_visible = true;
         bool dirty = true;
 
-        // caret/scroll helpers (local to content area)
         float scroll_x = 0.f;
         float scroll_y = 0.f;
 
@@ -153,7 +151,6 @@ namespace me::ui::cmp {
         }
     };
 
-    // Tag/components for the two widget kinds (share TextEditState behavior)
     struct LineEdit { };
     struct TextEdit { };
 

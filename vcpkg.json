@@ -7,6 +7,8 @@
     "entt",
     "termcolor",
     "nlohmann-json",
-    "gamenetworkingsockets"
+    "gamenetworkingsockets",
+    "glm",
+    "glad"
   ]
 }

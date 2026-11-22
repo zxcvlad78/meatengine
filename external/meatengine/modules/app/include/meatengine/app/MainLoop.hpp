@@ -12,8 +12,7 @@ namespace me {
     public:
         MainLoop() = delete;
 
-        static void init(const std::string& title, sf::VideoMode default_mode = sf::VideoMode{sf::Vector2u(1280, 720)});
-        static void run(std::unique_ptr<GameState> initial_state);
+        static void init(const std::string& title, sf::VideoMode default_mode = sf::VideoMode{sf::Vector2u(1280, 720)});        static void run(std::unique_ptr<GameState> initial_state);
         static void change_state(std::unique_ptr<GameState> new_state);
 
         template<typename T, typename... Args>
@@ -62,10 +61,11 @@ namespace me {
 
         inline static std::string m_window_title;
         inline static sf::RenderWindow m_window;
+        inline static sf::ContextSettings m_context_settings;
         inline static bool m_fullscreen = false;
         inline static sf::VideoMode m_prev_mode;
 
-        inline static int m_target_fps = 144;
+        inline static float m_target_fps = 144;
 
         inline static sf::Clock m_clock;
         inline static entt::registry m_registry;

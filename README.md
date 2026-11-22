@@ -5,6 +5,7 @@
 - **Lua scripting**
 - **Flexible modding**
 - **ECS**
+- **Full 3D rendering** (OpenGL 3.3+, meshes/primitives/OBJ, Blinn-Phong lights, fog, transparency)
 - **Low/high level networking (in dev)**
 
 ### Linking with your project
@@ -19,7 +20,9 @@
     "entt",
     "termcolor",
     "nlohmann-json",
-    "gamenetworkingsockets"
+    "gamenetworkingsockets",
+    "glm",
+    "glad"
   ]
 }
 ```

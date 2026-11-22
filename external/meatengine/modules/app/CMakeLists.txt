@@ -16,11 +16,13 @@ meatengine_set_target_options(meatengine_app)
 target_link_libraries(meatengine_app PUBLIC
     meatengine_assets
     meatengine_ecs
+    meatengine_audio
     SFML::Graphics SFML::Window SFML::System
 )
 
 meatengine_require(assets)
 meatengine_require(ecs)
+meatengine_require(audio)
 
 if(MEATENGINE_WITH_SCRIPTING)
     add_subdirectory(lua)

@@ -101,7 +101,6 @@ void run() {
             const float line_h = st->text->getFont().getLineSpacing(st->character_size);
             const float caret_h = line_h;
 
-            // selection (draw behind text)
             if (st->has_selection() && r.any_of<me::ui::cmp::Focused>(e)) {
                 std::size_t a = std::min(st->sel_min(), (std::size_t)shownSize);
                 std::size_t bsel = std::min(st->sel_max(), (std::size_t)shownSize);
@@ -109,20 +108,16 @@ void run() {
 
                 std::size_t i = a;
                 while (i < bsel) {
-                    // find newline terminating this visual line
                     std::size_t line_break = i;
                     while (line_break < sref.size() && sref[line_break] != U'\n') ++line_break;
 
-                    // end of selected segment on this line (exclude '\n' char itself)
                     std::size_t seg_end = std::min(bsel, line_break);
 
                     sf::Vector2f p1 = st->text->findCharacterPos(std::min(i, (std::size_t)shownSize));
 
-                    // compute right edge: prefer position after last selected char on this segment
                     float right_x = p1.x;
                     if (seg_end > i) {
                         right_x = st->text->findCharacterPos(std::min(seg_end, (std::size_t)shownSize)).x;
-                        // fallback/robustness: ensure we cover all chars in the segment
                         if (right_x <= p1.x + 0.01f) {
                             for (std::size_t k = i + 1; k <= seg_end; ++k) {
                                 float xk = st->text->findCharacterPos(std::min(k, (std::size_t)shownSize)).x;
@@ -133,14 +128,12 @@ void run() {
 
                     float w = right_x - p1.x;
 
-                    // if selection includes the newline, extend highlight to show end-of-line selection
                     if (bsel > line_break && line_break < sref.size() && sref[line_break] == U'\n') {
                         float nl_x = st->text->findCharacterPos(std::min(line_break, (std::size_t)shownSize)).x;
                         if (nl_x > right_x) w = std::max(w, nl_x - p1.x);
                         w += static_cast<float>(st->character_size) * 0.4f;
                     }
 
-                    // empty segment (e.g. selecting only a newline)
                     if (w < 0.5f && bsel > i) {
                         w = static_cast<float>(st->character_size) * 0.4f;
                     }
@@ -153,13 +146,12 @@ void run() {
                     }
 
                     if (line_break >= bsel) break;
-                    i = line_break + 1; // next line
+                    i = line_break + 1;
                 }
             }
 
             win.draw(*st->text, xf);
 
-            // cursor
             if (r.any_of<me::ui::cmp::Focused>(e) && st->cursor_visible && !st->read_only) {
                 auto cp = st->text->findCharacterPos(std::min(st->cursor, (std::size_t)shownSize));
                 st->cursor_shape.setPosition({cp.x, cp.y});

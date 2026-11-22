@@ -1,20 +1,16 @@
-#include <iostream>
-
 #include <meatengine/app/App.hpp>
 #include <meatengine/app/MainLoop.hpp>
-#include <meatengine/audio/SoundPlayer.hpp>
-#include <meatengine/ecs/SystemRegistry.hpp>
+
+#include <meatengine/ui/widgets/ui_root.hpp>
+#include <meatengine/ui/widgets/label.hpp>
+
 #include <godlike/states/MainMenu.hpp>
-#include <godlike/states/ModList.hpp>
-#include <godlike/packed_entities.hpp>
-#include <meatengine/plugins/TextEditor.hpp>
+
+using namespace me;
+using namespace godlike;
 
 int main() {
-	me::App("GodLike")
-		.add_plugins<me::TextEditorPlugin>()
-		.run();
-	me::MainLoop::run(std::make_unique<godlike::states::MainMenu>());
-	me::SoundPlayer::reset();
-
-	return 0;
+    me::App("Godlike").run();
+    me::MainLoop::run(std::make_unique<states::MainMenu>());
+    return 0;
 }

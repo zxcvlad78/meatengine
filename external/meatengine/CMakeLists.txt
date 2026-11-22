@@ -23,6 +23,7 @@ set(MEATENGINE_MODULES
     physics
     net
     graphics
+    3d
     app
     scripting
     modding

@@ -84,6 +84,7 @@ public:
 
     void build(App&) override {
         auto& reg = MainLoop::get_registry();
+        using namespace me;
         using namespace me::ui;
 
         const sf::Color col_bg{30, 30, 30};
@@ -92,8 +93,8 @@ public:
         const sf::Color col_muted{160, 160, 160};
 
         auto ui_root = widgets::make_ui_root(reg);
-        reg.emplace_or_replace<me::abstract::cmp::ZIndex>(ui_root, 10);
         {
+            reg.emplace_or_replace<me::abstract::cmp::ZIndex>(ui_root, 10);
             auto& node = reg.get<cmp::Node>(ui_root);
             node.width = cmp::Val::Percent(100.f);
             node.height = cmp::Val::Percent(100.f);
@@ -103,6 +104,7 @@ public:
             flex.align_items = cmp::AlignItems::Stretch;
             reg.get_or_emplace<cmp::BackgroundColor>(ui_root).color = col_bg;
             reg.get_or_emplace<cmp::FillRect>(ui_root).shape.setFillColor(col_bg);
+            reg.get_or_emplace<graphics::cmp::Visibility>(ui_root).value = false;
         }
 
         auto tabbar = widgets::make_panel(reg, ui_root);

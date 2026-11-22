@@ -107,7 +107,6 @@ void run() {
 
     static entt::entity prev_hover = entt::null;
 
-    // if previously hovered entity became invisible, clear it
     if (prev_hover != entt::null && r.valid(prev_hover) && !is_visible(r, prev_hover)) {
         Event ev{EventType::Unhover, in.mouse_pos, prev_hover, false};
         bubble_event(r, prev_hover, ev);

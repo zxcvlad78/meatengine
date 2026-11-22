@@ -4,6 +4,8 @@
 #include <meatengine/assets/ResourceLoader.hpp>
 #include <meatengine/app/ctx/InputState.hpp>
 
+#include <meatengine/audio/SoundPlayer.hpp>
+
 #include <meatengine/ecs/SystemRegistry.hpp>
 #include <meatengine/ecs/registry_setup.hpp>
 
@@ -30,7 +32,12 @@ namespace me {
         m_window_title = std::move(title);
         m_registry.ctx().emplace<app::ctx::InputState>();
         me::registry_setup::run(m_registry);
-        m_window.create(m_prev_mode, title);
+
+        // Depth buffer + MSAA so 3D rendering (modules/3d) works out of the
+        // box; harmless for pure 2D projects.
+        m_context_settings.depthBits = 24;
+        m_context_settings.antiAliasingLevel = 4;
+        m_window.create(m_prev_mode, title, sf::Style::Default, sf::State::Windowed, m_context_settings);
         m_window.setFramerateLimit(144);
 
         for (auto& hook : m_on_init) hook(m_window);
@@ -131,9 +138,9 @@ namespace me {
                 if (keyPressed->code == sf::Keyboard::Key::F11) {
                     m_fullscreen = !m_fullscreen;
                     if (m_fullscreen) {
-                        m_window.create(sf::VideoMode::getDesktopMode(), m_window_title, sf::State::Fullscreen);
+                        m_window.create(sf::VideoMode::getDesktopMode(), m_window_title, sf::State::Fullscreen, m_context_settings);
                     } else {
-                        m_window.create(m_prev_mode, m_window_title, sf::State::Windowed);
+                        m_window.create(m_prev_mode, m_window_title, sf::State::Windowed, m_context_settings);
                     }
                     m_window.setFramerateLimit(m_target_fps);
                 } else if (keyPressed->code == sf::Keyboard::Key::Backspace) {
@@ -225,6 +232,7 @@ namespace me {
         m_current_state.reset();
         m_next_state.reset();
         for (auto& hook : m_on_shutdown) hook();
+        me::SoundPlayer::reset();
     }
 
 } // namespace me

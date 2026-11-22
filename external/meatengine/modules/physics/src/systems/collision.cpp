@@ -9,6 +9,9 @@
 
 static void collision() {
     auto& reg = me::MainLoop::get_registry();
+    static double total_ms = 0.0;
+    static int calls = 0;
+    auto t0 = std::chrono::steady_clock::now();
     float dt = me::MainLoop::get_fixed_dt();
 
     using Transform = me::spatial::cmp::Transform;
@@ -18,14 +21,18 @@ static void collision() {
         sf::FloatRect aabb1(t.position, rc.size);
         for (auto [e1, t1, rc1] : reg.view<Transform, RectCollider>().each()) {
             if (e1 == e) continue;
-            sf::FloatRect aabb2(t.position, rc.size);
+            sf::FloatRect aabb2(t1.position, rc1.size);
             if (aabb1.findIntersection(aabb2).has_value()) {
-                rc.on_collision(e1);
-                rc1.on_collision(e);
+                if (rc.on_collision) rc.on_collision(e1);
+                if (rc1.on_collision) rc1.on_collision(e);
             }
-        
+
         }
     }
+    total_ms += std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count();
+    if (calls % 60 == 0)
+        std::cerr << "[phys] collision call=" << calls
+                  << " avg_ms=" << total_ms / (calls ? calls : 1) << "\n";
 }
 
 
